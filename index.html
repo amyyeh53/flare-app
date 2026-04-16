@@ -680,6 +680,7 @@ async function handleOAuthCallback(code) {
     body: new URLSearchParams({
       code,
       client_id:     CLIENT_ID,
+      client_secret: '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',
       redirect_uri:  redirectUri,
       grant_type:    'authorization_code',
       code_verifier: verifier,
