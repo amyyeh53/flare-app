@@ -568,6 +568,74 @@
     }
     .detail-sym-row:last-child { border-bottom: none; }
 
+
+    /* ── Triggers ── */
+    .lookback-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--bg3);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lookback-btn.selected {
+      border-color: var(--accent);
+      background: rgba(232,89,60,0.12);
+      color: var(--text);
+    }
+    .trigger-row {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .trigger-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .trigger-cat-name {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .trigger-pct {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .trigger-bar-track {
+      height: 6px;
+      background: var(--bg3);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .trigger-bar-fill {
+      height: 6px;
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+    .trigger-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .watch-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(232,89,60,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(232,89,60,0.3);
+    }
+
   </style>
 </head>
 <body>
@@ -966,16 +1034,57 @@
   </div>
 </div>
 
-<div id="screen-triggers" class="screen hidden">
+<div id="screen-triggers" class="screen hidden" style="padding-bottom:80px;">
   <div class="top-bar">
     <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
     <div class="logo">Fl<span>a</span>re</div>
     <div style="width:48px;"></div>
   </div>
-  <div class="content" style="text-align:center;padding-top:80px;">
-    <div style="font-size:40px;margin-bottom:16px;">🔍</div>
-    <h2>Trigger correlation</h2>
-    <p>Coming in M6</p>
+  <div class="content">
+
+    <!-- Lookback toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:14px;font-weight:600;">Lookback window</div>
+      <div style="display:flex;gap:6px;" id="lookback-toggle">
+        <button class="lookback-btn selected" data-days="3"  onclick="setLookback(3)">3d</button>
+        <button class="lookback-btn"          data-days="7"  onclick="setLookback(7)">7d</button>
+        <button class="lookback-btn"          data-days="14" onclick="setLookback(14)">14d</button>
+      </div>
+    </div>
+
+    <!-- Progress / gating -->
+    <div id="trigger-gate" class="hidden">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:32px;margin-bottom:10px;">📊</div>
+        <div style="font-weight:600;margin-bottom:6px;" id="gate-msg"></div>
+        <div style="font-size:13px;color:var(--muted);">Keep logging daily to unlock correlation results.</div>
+        <div style="margin-top:14px;background:var(--bg3);border-radius:999px;height:6px;overflow:hidden;">
+          <div id="gate-progress-bar" style="height:6px;background:var(--accent);border-radius:999px;transition:width 0.4s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="trigger-results" class="hidden">
+
+      <!-- Risk legend -->
+      <div style="display:flex;gap:16px;margin-bottom:20px;font-size:12px;color:var(--muted);">
+        <span>🟢 &lt;25% co-occurrence</span>
+        <span>🟡 26–60%</span>
+        <span>🔴 60%+</span>
+      </div>
+
+      <!-- Category list -->
+      <div class="section-label" style="margin-bottom:12px;">Food categories</div>
+      <div id="trigger-category-list"></div>
+
+      <!-- Flare days summary -->
+      <div style="margin-top:24px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Analysis based on</div>
+        <div id="trigger-summary" style="font-size:14px;font-weight:600;"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1065,6 +1174,7 @@ function showScreen(id) {
   if (id === 'screen-log-food') initFoodLog();
   if (id === 'screen-log-symptom') initSymptomLog();
   if (id === 'screen-timeline') initTimeline();
+  if (id === 'screen-triggers') initTriggers();
 }
 
 // ═══════════════════════════════════════════
@@ -2223,6 +2333,154 @@ function renderOverviewChart() {
 
 // Keep old renderChart as alias so nothing breaks
 function renderChart() { renderCorrelationChart(); }
+
+
+// ═══════════════════════════════════════════
+// TRIGGER CORRELATION (M6)
+// ═══════════════════════════════════════════
+let triggerState = {
+  lookbackDays: 3,
+  allFoodRows: [],
+  allSymptomRows: [],
+};
+
+function setLookback(days) {
+  triggerState.lookbackDays = days;
+  document.querySelectorAll('.lookback-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.days) === days);
+  });
+  computeTriggers();
+}
+
+async function initTriggers() {
+  try {
+    const [foodResp, symResp] = await Promise.all([
+      gapi('GET', `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/food_log`),
+      gapi('GET', `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/symptom_log`),
+    ]);
+    triggerState.allFoodRows    = (foodResp.values  || []).slice(1).filter(r => r[0] && r[3]);
+    triggerState.allSymptomRows = (symResp.values   || []).slice(1).filter(r => r[0] && r[2]);
+  } catch(e) {
+    console.error('Trigger load error', e);
+  }
+  computeTriggers();
+}
+
+function computeTriggers() {
+  const days    = triggerState.lookbackDays;
+  const gateEl  = document.getElementById('trigger-gate');
+  const resEl   = document.getElementById('trigger-results');
+  const gateMsg = document.getElementById('gate-msg');
+  const gateBar = document.getElementById('gate-progress-bar');
+  if (!gateEl || !resEl) return;
+
+  // Get unique logged days
+  const allDays = new Set([
+    ...triggerState.allFoodRows.map(r => r[0]),
+    ...triggerState.allSymptomRows.map(r => r[0]),
+  ]);
+  const loggedDayCount = allDays.size;
+
+  // Gate check
+  if (loggedDayCount < days) {
+    gateEl.classList.remove('hidden');
+    resEl.classList.add('hidden');
+    gateMsg.textContent = `${loggedDayCount} of ${days} days logged`;
+    const pct = Math.round((loggedDayCount / days) * 100);
+    gateBar.style.width = pct + '%';
+    return;
+  }
+
+  gateEl.classList.add('hidden');
+  resEl.classList.remove('hidden');
+
+  // Build date range: last N days
+  const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setDate(today.getDate() - days);
+  const cutoffKey = cutoff.toISOString().slice(0,10);
+
+  const foodInWindow = triggerState.allFoodRows.filter(r => r[0] >= cutoffKey);
+  const symInWindow  = triggerState.allSymptomRows.filter(r => r[0] >= cutoffKey);
+
+  // Identify flare days: any day with severity >= 2 (Moderate+)
+  const flareDays = new Set();
+  symInWindow.forEach(r => {
+    if ((parseInt(r[3]) || 0) >= 2) flareDays.add(r[0]);
+  });
+
+  const totalDaysInWindow = [...new Set([
+    ...foodInWindow.map(r => r[0]),
+    ...symInWindow.map(r => r[0]),
+  ])].filter(d => d >= cutoffKey).length;
+
+  // For each food category, count how many flare days it appeared in the same day
+  const catDays    = {}; // cat -> Set of days it was logged
+  const catFlares  = {}; // cat -> count of flare days it appeared on
+
+  foodInWindow.forEach(r => {
+    const cat = r[4];
+    if (!cat || cat === 'other') return;
+    if (!catDays[cat]) catDays[cat] = new Set();
+    catDays[cat].add(r[0]);
+  });
+
+  Object.entries(catDays).forEach(([cat, days]) => {
+    catFlares[cat] = [...days].filter(d => flareDays.has(d)).length;
+  });
+
+  // Calculate co-occurrence % = flare days with cat / total flare days
+  const flareDayCount = flareDays.size;
+  const results = Object.entries(catDays).map(([cat, daysSet]) => {
+    const occurrences  = daysSet.size;
+    const flareHits    = catFlares[cat] || 0;
+    const pct = flareDayCount > 0 ? Math.round((flareHits / flareDayCount) * 100) : 0;
+    return { cat, occurrences, flareHits, pct };
+  });
+
+  // Sort by pct desc
+  results.sort((a, b) => b.pct - a.pct);
+
+  // Render
+  const listEl = document.getElementById('trigger-category-list');
+  listEl.innerHTML = '';
+
+  if (results.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">No food data in this window</div>';
+  } else {
+    results.forEach(r => {
+      const isWatched = (state.watchCategories || []).includes(r.cat);
+      const riskIcon  = r.pct >= 60 ? '🔴' : r.pct >= 26 ? '🟡' : '🟢';
+      const barColor  = r.pct >= 60 ? '#e8593c' : r.pct >= 26 ? '#d4a020' : '#3db87a';
+      const pctColor  = r.pct >= 60 ? '#e8593c' : r.pct >= 26 ? '#d4a020' : '#3db87a';
+
+      const row = document.createElement('div');
+      row.className = 'trigger-row';
+      row.innerHTML = `
+        <div class="trigger-row-top">
+          <div class="trigger-cat-name">
+            ${riskIcon}
+            ${CATEGORY_EMOJI[r.cat] || ''} ${r.cat.charAt(0).toUpperCase() + r.cat.slice(1)}
+            ${isWatched ? '<span class="watch-badge">watch list</span>' : ''}
+          </div>
+          <div class="trigger-pct" style="color:${pctColor};">${r.pct}%</div>
+        </div>
+        <div class="trigger-bar-track">
+          <div class="trigger-bar-fill" style="width:${r.pct}%;background:${barColor};"></div>
+        </div>
+        <div class="trigger-meta">
+          Appeared on ${r.occurrences} logged day${r.occurrences !== 1 ? 's' : ''} &nbsp;·&nbsp;
+          ${r.flareHits} flare day${r.flareHits !== 1 ? 's' : ''} overlap
+        </div>
+      `;
+      listEl.appendChild(row);
+    });
+  }
+
+  // Summary line
+  document.getElementById('trigger-summary').textContent =
+    `${flareDayCount} flare day${flareDayCount !== 1 ? 's' : ''} and ${totalDaysInWindow} total day${totalDaysInWindow !== 1 ? 's' : ''} in the last ${days} days`;
+}
 
 
 // ═══════════════════════════════════════════
