@@ -7,54 +7,988 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f0f0f;
-      color: #f0ede6;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    :root {
+      --bg: #0f0f0f;
+      --bg2: #1a1a1a;
+      --bg3: #242424;
+      --border: #2e2e2e;
+      --text: #f0ede6;
+      --muted: #888;
+      --accent: #e8593c;
+      --accent2: #f0a070;
+      --green: #3db87a;
+      --yellow: #f0c040;
+      --red: #e8593c;
     }
 
-    .splash {
-      text-align: center;
-      padding: 40px 24px;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Utilities ── */
+    .hidden { display: none !important; }
+
+    .screen {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 0 0 32px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
     }
 
     .logo {
-      font-size: 48px;
+      font-size: 22px;
       font-weight: 700;
-      letter-spacing: -1px;
-      color: #f0ede6;
-      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+
+    .content {
+      flex: 1;
+      padding: 32px 20px 0;
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
     }
 
-    .logo span {
-      color: #e8593c;
-    }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
+    h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+    p  { font-size: 15px; color: var(--muted); line-height: 1.6; }
 
-    .tagline {
+    /* ── Buttons ── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
       font-size: 15px;
-      color: #888;
-      margin-bottom: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.75; }
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-google    { background: #fff; color: #1a1a1a; }
+    .btn-google img { width: 20px; height: 20px; }
+    .btn + .btn    { margin-top: 12px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 12px;
     }
 
-    .status {
-      display: inline-block;
-      font-size: 13px;
-      color: #555;
-      border: 1px solid #222;
-      border-radius: 6px;
-      padding: 8px 16px;
+    /* ── Chip grid ── */
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
     }
+
+    .chip {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--bg3);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip.selected {
+      border-color: var(--accent);
+      background: rgba(232, 89, 60, 0.12);
+      color: var(--text);
+    }
+
+    /* ── Progress dots ── */
+    .progress-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 24px 0 0;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.2s;
+    }
+    .dot.active { background: var(--accent); }
+    .dot.done   { background: var(--muted); }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Watch list preview ── */
+    .watch-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .watch-item:last-child { border-bottom: none; }
+    .watch-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Home screen ── */
+    .home-date {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .home-greeting {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 700; }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .action-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      text-align: center;
+    }
+    .action-card:active { border-color: var(--accent); }
+    .action-icon { font-size: 28px; margin-bottom: 8px; }
+    .action-label { font-size: 13px; font-weight: 600; }
+    .action-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 0;
+      cursor: pointer;
+      font-size: 10px;
+      color: var(--muted);
+      transition: color 0.15s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-icon { font-size: 20px; }
+
+    /* ── Setup status ── */
+    #setup-status {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      background: rgba(232, 89, 60, 0.1);
+      border: 1px solid rgba(232, 89, 60, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--accent2);
+      margin-top: 16px;
+    }
+
+    /* ── Splash ── */
+    #screen-splash {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .splash-logo { font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 8px; }
+    .splash-logo span { color: var(--accent); }
+    .splash-tag { font-size: 15px; color: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="splash">
-    <div class="logo">Fl<span>a</span>re</div>
-    <div class="tagline">Track food. Spot triggers.</div>
-    <div class="status">Setting up…</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Splash
+═══════════════════════════════════════════ -->
+<div id="screen-splash" class="screen hidden">
+  <div class="content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;">
+    <div class="splash-logo">Fl<span>a</span>re</div>
+    <div class="splash-tag">Track food. Spot triggers.</div>
   </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Sign In
+═══════════════════════════════════════════ -->
+<div id="screen-signin" class="screen hidden">
+  <div class="content" style="display:flex;flex-direction:column;justify-content:center;flex:1;">
+    <div style="margin-bottom:40px;">
+      <div class="logo" style="font-size:32px;margin-bottom:12px;">Fl<span>a</span>re</div>
+      <h1>Know your triggers.</h1>
+      <p style="margin-top:8px;">Log what you eat and how you feel. Flare connects the dots.</p>
+    </div>
+
+    <button class="btn btn-google" id="btn-signin" onclick="signIn()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+      Continue with Google
+    </button>
+
+    <div id="signin-error" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Onboarding — Step 1: Conditions
+═══════════════════════════════════════════ -->
+<div id="screen-ob1" class="screen hidden">
+  <div class="top-bar">
+    <div class="logo">Fl<span>a</span>re</div>
+    <span style="font-size:13px;color:var(--muted);">Setup</span>
+  </div>
+  <div class="content">
+    <div class="progress-dots" style="justify-content:flex-start;padding:0 0 24px;">
+      <div class="dot active" id="dot1-1"></div>
+      <div class="dot" id="dot1-2"></div>
+      <div class="dot" id="dot1-3"></div>
+    </div>
+
+    <h2>What are you managing?</h2>
+    <p>Pick any diagnosed conditions. This shapes your symptom list and watch categories.</p>
+
+    <div class="chip-grid" id="condition-chips"></div>
+
+    <p style="margin-top:20px;font-size:13px;">Also suspected (not confirmed)?</p>
+    <div class="chip-grid" id="suspected-chips"></div>
+  </div>
+  <div style="padding:24px 20px 0;max-width:480px;margin:0 auto;width:100%;">
+    <button class="btn btn-primary" onclick="ob1Next()">Continue</button>
+    <button class="btn btn-secondary" onclick="ob1Skip()">Skip — set up manually later</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Onboarding — Step 2: Watch list
+═══════════════════════════════════════════ -->
+<div id="screen-ob2" class="screen hidden">
+  <div class="top-bar">
+    <div class="logo">Fl<span>a</span>re</div>
+    <span style="font-size:13px;color:var(--muted);">Setup</span>
+  </div>
+  <div class="content">
+    <div class="progress-dots" style="justify-content:flex-start;padding:0 0 24px;">
+      <div class="dot done" id="dot2-1"></div>
+      <div class="dot active" id="dot2-2"></div>
+      <div class="dot" id="dot2-3"></div>
+    </div>
+
+    <h2>Your watch list</h2>
+    <p>Based on your conditions, we'll flag these categories in your trigger reports. You can edit this anytime.</p>
+
+    <div class="card" style="margin-top:20px;">
+      <div id="watch-list-preview"></div>
+    </div>
+  </div>
+  <div style="padding:24px 20px 0;max-width:480px;margin:0 auto;width:100%;">
+    <button class="btn btn-primary" onclick="ob2Next()">Looks good</button>
+    <button class="btn btn-secondary" onclick="showScreen('screen-ob1')">Back</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Onboarding — Step 3: Creating sheet
+═══════════════════════════════════════════ -->
+<div id="screen-ob3" class="screen hidden">
+  <div class="top-bar">
+    <div class="logo">Fl<span>a</span>re</div>
+    <span style="font-size:13px;color:var(--muted);">Setup</span>
+  </div>
+  <div class="content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;">
+    <div class="progress-dots" style="margin-bottom:32px;">
+      <div class="dot done"></div>
+      <div class="dot done"></div>
+      <div class="dot active"></div>
+    </div>
+
+    <h2 style="margin-bottom:8px;">Setting up your data</h2>
+    <p id="ob3-msg">Creating your private Google Sheet…</p>
+    <div id="ob3-status" style="margin-top:24px;font-size:13px;color:var(--muted);"></div>
+    <div id="ob3-error" class="error-msg hidden" style="margin-top:16px;"></div>
+    <button id="ob3-retry" class="btn btn-primary hidden" style="margin-top:16px;" onclick="ob3CreateSheet()">Try again</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Home
+═══════════════════════════════════════════ -->
+<div id="screen-home" class="screen hidden" style="padding-bottom:80px;">
+  <div class="top-bar">
+    <div class="logo">Fl<span>a</span>re</div>
+    <div id="home-user-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;cursor:pointer;" onclick="showScreen('screen-settings')"></div>
+  </div>
+  <div class="content">
+    <div class="home-date" id="home-date"></div>
+    <div class="home-greeting" id="home-greeting"></div>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Meals today</div>
+        <div class="stat-value" id="stat-meals">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Symptom level</div>
+        <div class="stat-value" id="stat-symptoms">—</div>
+      </div>
+    </div>
+
+    <div class="action-grid">
+      <div class="action-card" onclick="showScreen('screen-log-food')">
+        <div class="action-icon">🍽️</div>
+        <div class="action-label">Log food</div>
+        <div class="action-sub">Add a meal or snack</div>
+      </div>
+      <div class="action-card" onclick="showScreen('screen-log-symptom')">
+        <div class="action-icon">🌡️</div>
+        <div class="action-label">Log symptom</div>
+        <div class="action-sub">How are you feeling?</div>
+      </div>
+      <div class="action-card" onclick="showScreen('screen-timeline')">
+        <div class="action-icon">📅</div>
+        <div class="action-label">Timeline</div>
+        <div class="action-sub">Your history</div>
+      </div>
+      <div class="action-card" onclick="showScreen('screen-triggers')">
+        <div class="action-icon">🔍</div>
+        <div class="action-label">Triggers</div>
+        <div class="action-sub">Find patterns</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="showScreen('screen-home')">
+      <div class="nav-icon">🏠</div>
+      <div>Home</div>
+    </div>
+    <div class="nav-item" onclick="showScreen('screen-log-food')">
+      <div class="nav-icon">🍽️</div>
+      <div>Food</div>
+    </div>
+    <div class="nav-item" onclick="showScreen('screen-log-symptom')">
+      <div class="nav-icon">🌡️</div>
+      <div>Symptoms</div>
+    </div>
+    <div class="nav-item" onclick="showScreen('screen-timeline')">
+      <div class="nav-icon">📅</div>
+      <div>Timeline</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Settings (stub)
+═══════════════════════════════════════════ -->
+<div id="screen-settings" class="screen hidden" style="padding-bottom:80px;">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div class="logo">Fl<span>a</span>re</div>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="content">
+    <h2 style="margin-bottom:20px;">Settings</h2>
+    <div class="card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Signed in as</div>
+      <div id="settings-email" style="font-size:15px;"></div>
+    </div>
+    <div class="card" style="cursor:pointer;" onclick="openSheet()">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:15px;font-weight:600;">Open your data sheet</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;">View or export in Google Sheets</div>
+        </div>
+        <div style="color:var(--muted);">↗</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Watch categories</div>
+      <div id="settings-watch-list"></div>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:8px;" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN STUBS (M3–M6)
+═══════════════════════════════════════════ -->
+<div id="screen-log-food" class="screen hidden">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div class="logo">Fl<span>a</span>re</div>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="content" style="text-align:center;padding-top:80px;">
+    <div style="font-size:40px;margin-bottom:16px;">🍽️</div>
+    <h2>Food logging</h2>
+    <p>Coming in M3</p>
+  </div>
+</div>
+
+<div id="screen-log-symptom" class="screen hidden">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div class="logo">Fl<span>a</span>re</div>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="content" style="text-align:center;padding-top:80px;">
+    <div style="font-size:40px;margin-bottom:16px;">🌡️</div>
+    <h2>Symptom logging</h2>
+    <p>Coming in M4</p>
+  </div>
+</div>
+
+<div id="screen-timeline" class="screen hidden">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div class="logo">Fl<span>a</span>re</div>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="content" style="text-align:center;padding-top:80px;">
+    <div style="font-size:40px;margin-bottom:16px;">📅</div>
+    <h2>Timeline</h2>
+    <p>Coming in M5</p>
+  </div>
+</div>
+
+<div id="screen-triggers" class="screen hidden">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div class="logo">Fl<span>a</span>re</div>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="content" style="text-align:center;padding-top:80px;">
+    <div style="font-size:40px;margin-bottom:16px;">🔍</div>
+    <h2>Trigger correlation</h2>
+    <p>Coming in M6</p>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const CLIENT_ID = '595386438897-0kjd7i4g58corm3ntrdfv17fbekqfgsb.apps.googleusercontent.com';
+const SCOPES = [
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/drive.file',
+  'openid',
+  'email',
+  'profile'
+].join(' ');
+
+// ═══════════════════════════════════════════
+// CONDITIONS + WATCH LIST MAP
+// ═══════════════════════════════════════════
+const CONDITIONS = [
+  { id: 'crohns',    label: "Crohn's disease" },
+  { id: 'eczema',    label: 'Eczema' },
+  { id: 'pots',      label: 'POTS' },
+  { id: 'ibs',       label: 'IBS' },
+  { id: 'celiac',    label: 'Celiac disease' },
+  { id: 'histamine', label: 'Histamine intolerance' },
+  { id: 'lupus',     label: 'Lupus' },
+  { id: 'ra',        label: 'Rheumatoid arthritis' },
+  { id: 'ms',        label: 'Multiple sclerosis' },
+  { id: 'other',     label: 'Other' },
+];
+
+const CONDITION_WATCH = {
+  crohns:    ['gluten', 'dairy', 'processed/additives', 'alcohol', 'sugar'],
+  eczema:    ['dairy', 'gluten', 'histamine', 'nightshades', 'sugar'],
+  pots:      ['caffeine', 'alcohol', 'sugar'],
+  ibs:       ['gluten', 'dairy', 'nightshades', 'processed/additives', 'caffeine'],
+  celiac:    ['gluten'],
+  histamine: ['histamine', 'alcohol', 'processed/additives'],
+  lupus:     ['nightshades', 'processed/additives', 'sugar', 'alcohol'],
+  ra:        ['nightshades', 'gluten', 'dairy', 'sugar'],
+  ms:        ['dairy', 'gluten', 'sugar'],
+  other:     [],
+};
+
+const ALL_CATEGORIES = ['dairy','gluten','nightshades','caffeine','alcohol','histamine','processed/additives','sugar','other'];
+
+const CATEGORY_EMOJI = {
+  'dairy': '🥛', 'gluten': '🌾', 'nightshades': '🍅',
+  'caffeine': '☕', 'alcohol': '🍺', 'histamine': '🦐',
+  'processed/additives': '🧪', 'sugar': '🍬', 'other': '📦'
+};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let state = {
+  accessToken: null,
+  userInfo: null,
+  spreadsheetId: null,
+  conditions: [],
+  suspected: [],
+  watchCategories: [],
+  setupComplete: false,
+};
+
+function saveState() {
+  const s = {...state};
+  delete s.accessToken; // never persist token
+  localStorage.setItem('flare_state', JSON.stringify(s));
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('flare_state');
+    if (raw) Object.assign(state, JSON.parse(raw));
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// SCREEN ROUTER
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════
+// OAUTH — PKCE
+// ═══════════════════════════════════════════
+function b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function generatePKCE() {
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest   = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = b64url(digest);
+  return { verifier, challenge };
+}
+
+async function signIn() {
+  document.getElementById('signin-error').classList.add('hidden');
+  try {
+    const { verifier, challenge } = await generatePKCE();
+    sessionStorage.setItem('pkce_verifier', verifier);
+
+    const redirectUri = location.origin + location.pathname;
+    const params = new URLSearchParams({
+      client_id:             CLIENT_ID,
+      redirect_uri:          redirectUri,
+      response_type:         'code',
+      scope:                 SCOPES,
+      code_challenge:        challenge,
+      code_challenge_method: 'S256',
+      access_type:           'online',
+      prompt:                'consent',
+    });
+    location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params;
+  } catch(e) {
+    showError('signin-error', 'Could not start sign-in: ' + e.message);
+  }
+}
+
+async function handleOAuthCallback(code) {
+  showScreen('screen-splash');
+  const verifier    = sessionStorage.getItem('pkce_verifier');
+  const redirectUri = location.origin + location.pathname;
+
+  // Exchange code for token via Google's token endpoint
+  // Note: PKCE with public client — no client_secret needed
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body: new URLSearchParams({
+      code,
+      client_id:     CLIENT_ID,
+      redirect_uri:  redirectUri,
+      grant_type:    'authorization_code',
+      code_verifier: verifier,
+    })
+  });
+
+  const data = await resp.json();
+  if (!data.access_token) throw new Error(data.error_description || 'Token exchange failed');
+
+  state.accessToken = data.access_token;
+
+  // Clean URL
+  history.replaceState({}, '', location.pathname);
+
+  // Fetch user info
+  const uResp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + state.accessToken }
+  });
+  state.userInfo = await uResp.json();
+  saveState();
+
+  afterSignIn();
+}
+
+function signOut() {
+  state = { accessToken:null, userInfo:null, spreadsheetId:null,
+            conditions:[], suspected:[], watchCategories:[], setupComplete:false };
+  localStorage.removeItem('flare_state');
+  showScreen('screen-signin');
+}
+
+// ═══════════════════════════════════════════
+// POST SIGN-IN ROUTING
+// ═══════════════════════════════════════════
+function afterSignIn() {
+  if (state.setupComplete && state.spreadsheetId) {
+    showHome();
+  } else {
+    buildConditionChips();
+    showScreen('screen-ob1');
+  }
+}
+
+// ═══════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════
+function buildConditionChips() {
+  const diagEl = document.getElementById('condition-chips');
+  const suspEl = document.getElementById('suspected-chips');
+  diagEl.innerHTML = '';
+  suspEl.innerHTML = '';
+
+  CONDITIONS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'chip' + (state.conditions.includes(c.id) ? ' selected' : '');
+    d.textContent = c.label;
+    d.onclick = () => {
+      const idx = state.conditions.indexOf(c.id);
+      if (idx >= 0) state.conditions.splice(idx, 1);
+      else state.conditions.push(c.id);
+      d.classList.toggle('selected');
+    };
+    diagEl.appendChild(d);
+
+    const s = document.createElement('div');
+    s.className = 'chip' + (state.suspected.includes(c.id) ? ' selected' : '');
+    s.textContent = c.label;
+    s.onclick = () => {
+      const idx = state.suspected.indexOf(c.id);
+      if (idx >= 0) state.suspected.splice(idx, 1);
+      else state.suspected.push(c.id);
+      s.classList.toggle('selected');
+    };
+    suspEl.appendChild(s);
+  });
+}
+
+function computeWatchList() {
+  const cats = new Set();
+  [...state.conditions, ...state.suspected].forEach(id => {
+    (CONDITION_WATCH[id] || []).forEach(c => cats.add(c));
+  });
+  return [...cats];
+}
+
+function ob1Next() {
+  state.watchCategories = computeWatchList();
+  if (state.watchCategories.length === 0) {
+    // No conditions selected — use all categories as watch list
+    state.watchCategories = ALL_CATEGORIES.filter(c => c !== 'other');
+  }
+  buildWatchListPreview();
+  showScreen('screen-ob2');
+}
+
+function ob1Skip() {
+  state.conditions = [];
+  state.suspected  = [];
+  state.watchCategories = ALL_CATEGORIES.filter(c => c !== 'other');
+  showScreen('screen-ob3');
+  ob3CreateSheet();
+}
+
+function buildWatchListPreview() {
+  const el = document.getElementById('watch-list-preview');
+  el.innerHTML = '';
+  state.watchCategories.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'watch-item';
+    row.innerHTML = `<div class="watch-dot"></div><span>${CATEGORY_EMOJI[cat] || '•'} ${cat.charAt(0).toUpperCase() + cat.slice(1)}</span>`;
+    el.appendChild(row);
+  });
+}
+
+function ob2Next() {
+  showScreen('screen-ob3');
+  ob3CreateSheet();
+}
+
+async function ob3CreateSheet() {
+  const errEl   = document.getElementById('ob3-error');
+  const retryEl = document.getElementById('ob3-retry');
+  const statusEl = document.getElementById('ob3-status');
+  errEl.classList.add('hidden');
+  retryEl.classList.add('hidden');
+  statusEl.innerHTML = '<span class="spinner"></span>Creating your Google Sheet…';
+
+  try {
+    // 1. Create spreadsheet
+    const sheetName = `Flare — ${(state.userInfo?.name || 'My Data')}`;
+    const createResp = await gapi('POST', 'https://sheets.googleapis.com/v4/spreadsheets', {
+      properties: { title: sheetName },
+      sheets: [
+        { properties: { title: 'food_log' } },
+        { properties: { title: 'symptom_log' } },
+        { properties: { title: 'user_config' } },
+      ]
+    });
+
+    state.spreadsheetId = createResp.spreadsheetId;
+    statusEl.innerHTML = '<span class="spinner"></span>Writing headers…';
+
+    // 2. Write headers
+    await gapi('POST',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values:batchUpdate`,
+      {
+        valueInputOption: 'RAW',
+        data: [
+          { range: 'food_log!A1:F1',
+            values: [['date','time','meal_slot','food_name','category','is_custom']] },
+          { range: 'symptom_log!A1:E1',
+            values: [['date','time','symptom','severity','notes']] },
+          { range: 'user_config!A1:B1',
+            values: [['key','value']] },
+        ]
+      }
+    );
+
+    // 3. Write user_config rows
+    const configRows = [
+      ['conditions',      JSON.stringify(state.conditions)],
+      ['suspected',       JSON.stringify(state.suspected)],
+      ['watch_categories',JSON.stringify(state.watchCategories)],
+      ['setup_complete',  'true'],
+      ['user_name',       state.userInfo?.name || ''],
+      ['user_email',      state.userInfo?.email || ''],
+    ];
+
+    await gapi('POST',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/user_config!A2:B${1+configRows.length}:append`,
+      { values: configRows },
+      { valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS' }
+    );
+
+    state.setupComplete = true;
+    saveState();
+
+    statusEl.textContent = '✓ All set!';
+    setTimeout(() => showHome(), 800);
+
+  } catch(e) {
+    statusEl.textContent = '';
+    errEl.textContent = 'Setup failed: ' + (e.message || String(e));
+    errEl.classList.remove('hidden');
+    retryEl.classList.remove('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════
+function showHome() {
+  // Date
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('home-date').textContent =
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+  // Greeting
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (state.userInfo?.given_name || state.userInfo?.name || '').split(' ')[0];
+  document.getElementById('home-greeting').textContent =
+    firstName ? `${greet}, ${firstName}.` : `${greet}.`;
+
+  // Avatar
+  const avatar = document.getElementById('home-user-avatar');
+  if (state.userInfo?.picture) {
+    avatar.innerHTML = `<img src="${state.userInfo.picture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+  } else {
+    avatar.textContent = (state.userInfo?.name || '?')[0].toUpperCase();
+  }
+
+  // Stats — will show — when data screens are built
+  document.getElementById('stat-meals').textContent = '—';
+  document.getElementById('stat-symptoms').textContent = '—';
+
+  // Settings screen
+  document.getElementById('settings-email').textContent = state.userInfo?.email || '';
+  const swl = document.getElementById('settings-watch-list');
+  swl.innerHTML = '';
+  (state.watchCategories || []).forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'watch-item';
+    row.innerHTML = `<div class="watch-dot"></div><span>${CATEGORY_EMOJI[cat] || '•'} ${cat.charAt(0).toUpperCase() + cat.slice(1)}</span>`;
+    swl.appendChild(row);
+  });
+
+  showScreen('screen-home');
+}
+
+function openSheet() {
+  if (state.spreadsheetId) {
+    window.open(`https://docs.google.com/spreadsheets/d/${state.spreadsheetId}`, '_blank');
+  }
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE API HELPER
+// ═══════════════════════════════════════════
+async function gapi(method, url, body, queryParams) {
+  let fullUrl = url;
+  if (queryParams) {
+    fullUrl += '?' + new URLSearchParams(queryParams);
+  }
+  const opts = {
+    method,
+    headers: {
+      Authorization: 'Bearer ' + state.accessToken,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(fullUrl, opts);
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error?.message || JSON.stringify(data.error));
+  return data;
+}
+
+// ═══════════════════════════════════════════
+// ERROR HELPER
+// ═══════════════════════════════════════════
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init() {
+  loadState();
+
+  // Check for OAuth callback
+  const params = new URLSearchParams(location.search);
+  const code  = params.get('code');
+  const error = params.get('error');
+
+  if (error) {
+    showScreen('screen-signin');
+    showError('signin-error', 'Sign-in was cancelled or failed. Please try again.');
+    return;
+  }
+
+  if (code) {
+    try {
+      await handleOAuthCallback(code);
+    } catch(e) {
+      showScreen('screen-signin');
+      showError('signin-error', 'Sign-in failed: ' + e.message);
+    }
+    return;
+  }
+
+  // Returning user with saved state
+  if (state.setupComplete && state.spreadsheetId && state.userInfo) {
+    // No token in memory — need to re-auth silently
+    // For now, show sign-in again (token was lost on page refresh)
+    // M7 will add token refresh
+    showScreen('screen-signin');
+    return;
+  }
+
+  showScreen('screen-signin');
+}
+
+init();
+</script>
 </body>
 </html>
