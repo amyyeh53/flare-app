@@ -460,6 +460,66 @@
       z-index: 100;
     }
     .toast.show { opacity: 1; }
+
+    /* ── Symptom log ── */
+    .sym-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .sym-name { font-size: 14px; font-weight: 500; }
+    .sev-inline { display: flex; gap: 4px; flex-shrink: 0; margin-left: 8px; }
+    .sev-pip {
+      width: 36px;
+      padding: 5px 0;
+      border-radius: 6px;
+      border: 1.5px solid transparent;
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.12s;
+      color: #fff;
+    }
+    .sev-pip[data-sev="1"] { background: rgba(61,184,122,0.18); color: #3db87a; border-color: rgba(61,184,122,0.25); }
+    .sev-pip[data-sev="2"] { background: rgba(240,192,64,0.18); color: #c89a20; border-color: rgba(240,192,64,0.25); }
+    .sev-pip[data-sev="3"] { background: rgba(240,160,80,0.18); color: #d07030; border-color: rgba(240,160,80,0.25); }
+    .sev-pip[data-sev="4"] { background: rgba(232,89,60,0.18); color: #e8593c; border-color: rgba(232,89,60,0.25); }
+    .sev-pip[data-sev="1"].active { background: #3db87a; color: #fff; border-color: #3db87a; }
+    .sev-pip[data-sev="2"].active { background: #d4a020; color: #fff; border-color: #d4a020; }
+    .sev-pip[data-sev="3"].active { background: #d07030; color: #fff; border-color: #d07030; }
+    .sev-pip[data-sev="4"].active { background: #e8593c; color: #fff; border-color: #e8593c; }
+
+    .sym-pending-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .sym-pending-left { display: flex; flex-direction: column; gap: 2px; }
+    .sym-pending-name { font-weight: 600; }
+    .sym-pending-sev  { font-size: 12px; }
+
+    .sym-log-entry {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .sym-log-entry:last-child { border-bottom: none; }
+
   </style>
 </head>
 <body>
@@ -592,7 +652,7 @@
         <div class="stat-value" id="stat-meals">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Symptom level</div>
+        <div class="stat-label">Worst symptom today</div>
         <div class="stat-value" id="stat-symptoms">—</div>
       </div>
     </div>
@@ -731,17 +791,55 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<div id="screen-log-symptom" class="screen hidden">
+<div id="screen-log-symptom" class="screen hidden" style="padding-bottom:80px;">
   <div class="top-bar">
     <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
     <div class="logo">Fl<span>a</span>re</div>
     <div style="width:48px;"></div>
   </div>
-  <div class="content" style="text-align:center;padding-top:80px;">
-    <div style="font-size:40px;margin-bottom:16px;">🌡️</div>
-    <h2>Symptom logging</h2>
-    <p>Coming in M4</p>
+  <div class="content">
+
+    <!-- Severity legend -->
+    <div id="sev-legend" style="display:flex;align-items:center;gap:6px;margin-bottom:20px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap;">Not an issue</span>
+      <div style="flex:1;height:6px;border-radius:3px;background:linear-gradient(to right,#3db87a,#f0c040,#f0a050,#e8593c);"></div>
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap;">Unbearable</span>
+    </div>
+
+    <!-- Default symptom list -->
+    <div class="section-label">How are you feeling?</div>
+    <div id="symptom-list" style="margin-bottom:20px;"></div>
+
+    <!-- Add custom symptom -->
+    <div class="section-label">Add a symptom</div>
+    <div class="search-wrap">
+      <input
+        class="search-input"
+        id="symptom-search"
+        type="text"
+        placeholder="Type a symptom…"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        oninput="onSymptomSearch(this.value)"
+      />
+    </div>
+    <div id="symptom-search-results" class="search-results hidden"></div>
+
+    <!-- Pending -->
+    <div id="symptom-pending-section" class="hidden">
+      <div class="section-label" style="margin-top:20px;margin-bottom:10px;">In this entry</div>
+      <div id="symptom-pending-list"></div>
+      <button class="btn btn-primary" onclick="saveSymptomEntry()" style="margin-top:8px;">Save entry</button>
+    </div>
+
+    <!-- Today's symptom log -->
+    <div style="margin-top:28px;">
+      <div class="section-label">Today's symptoms</div>
+      <div id="todays-symptom-log"></div>
+    </div>
   </div>
+  <div class="toast" id="symptom-toast"></div>
 </div>
 
 <div id="screen-timeline" class="screen hidden">
@@ -854,6 +952,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   if (id === 'screen-log-food') initFoodLog();
+  if (id === 'screen-log-symptom') initSymptomLog();
 }
 
 // ═══════════════════════════════════════════
@@ -1175,6 +1274,323 @@ function showError(elId, msg) {
   const el = document.getElementById(elId);
   el.textContent = msg;
   el.classList.remove('hidden');
+}
+
+
+// ═══════════════════════════════════════════
+// SYMPTOM DATABASE
+// ═══════════════════════════════════════════
+const CONDITION_SYMPTOMS = {
+  crohns:    ['Abdominal cramping','Bloating','Diarrhea','Nausea','Vomiting','Blood in stool',
+               'Urgency to use bathroom','Fatigue','Loss of appetite','Joint pain','Fever'],
+  eczema:    ['Skin itching','Skin redness','Skin rash','Dry skin','Skin flare','Swelling',
+               'Burning skin','Weeping skin','Skin cracking','Eye irritation','Fatigue'],
+  pots:      ['Heart racing','Dizziness','Lightheadedness','Fainting','Fatigue','Brain fog',
+               'Shortness of breath','Headache','Chest pain','Shakiness','Nausea'],
+  ibs:       ['Abdominal cramping','Bloating','Diarrhea','Constipation','Gas','Nausea',
+               'Urgency to use bathroom','Mucus in stool','Fatigue'],
+  celiac:    ['Abdominal cramping','Bloating','Diarrhea','Fatigue','Brain fog','Headache',
+               'Joint pain','Skin rash','Nausea','Vomiting'],
+  histamine: ['Hives','Skin flushing','Headache','Runny nose','Sneezing','Itchy eyes',
+               'Heart racing','Dizziness','Nausea','Diarrhea','Fatigue','Anxiety'],
+  lupus:     ['Fatigue','Joint pain','Skin rash','Fever','Headache','Hair loss',
+               'Chest pain','Shortness of breath','Brain fog','Swelling'],
+  ra:        ['Joint pain','Joint swelling','Joint stiffness','Fatigue','Fever',
+               'Loss of appetite','Weakness'],
+  ms:        ['Fatigue','Brain fog','Numbness','Tingling','Muscle weakness','Dizziness',
+               'Vision problems','Headache','Balance issues','Bladder urgency'],
+  other:     ['Fatigue','Headache','Nausea','Dizziness','Brain fog','Joint pain',
+               'Muscle aches','Bloating','Skin rash','Anxiety','Insomnia'],
+};
+
+const ALL_SYMPTOMS = [...new Set(Object.values(CONDITION_SYMPTOMS).flat())].sort();
+
+const SEV_LABELS = { 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
+const SEV_COLORS = { 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
+
+// ═══════════════════════════════════════════
+// SYMPTOM LOG STATE
+// ═══════════════════════════════════════════
+let symptomLog = {
+  pendingItems: [],  // [{name, severity (1-4)}]
+};
+
+function getDefaultSymptoms() {
+  const syms = new Set();
+  [...(state.conditions||[]), ...(state.suspected||[])].forEach(id => {
+    (CONDITION_SYMPTOMS[id]||[]).forEach(s => syms.add(s));
+  });
+  if (syms.size === 0) {
+    CONDITION_SYMPTOMS.other.forEach(s => syms.add(s));
+  }
+  return [...syms];
+}
+
+// ═══════════════════════════════════════════
+// SYMPTOM SCREEN INIT
+// ═══════════════════════════════════════════
+function initSymptomLog() {
+  symptomLog.pendingItems = [];
+
+  // Build symptom list
+  const listEl = document.getElementById('symptom-list');
+  listEl.innerHTML = '';
+  getDefaultSymptoms().forEach(sym => {
+    listEl.appendChild(buildSymRow(sym));
+  });
+
+  // Clear search
+  const si = document.getElementById('symptom-search');
+  si.value = '';
+  document.getElementById('symptom-search-results').classList.add('hidden');
+
+  renderSymptomPending();
+  loadTodaysSymptomLog();
+}
+
+function buildSymRow(name) {
+  const row = document.createElement('div');
+  row.className = 'sym-row';
+  row.id = 'symrow-' + name.replace(/\s+/g,'-');
+
+  const sevHtml = [1,2,3,4].map(n =>
+    `<div class="sev-pip" data-sev="${n}" data-sym="${name}" onclick="setSev('${name.replace(/'/g,"\\'")}',${n},this)">${SEV_LABELS[n].slice(0,3)}</div>`
+  ).join('');
+
+  row.innerHTML = `
+    <span class="sym-name">${name}</span>
+    <div class="sev-inline">${sevHtml}</div>
+  `;
+  return row;
+}
+
+function setSev(name, sev, btn) {
+  // Update or add to pending
+  const existing = symptomLog.pendingItems.find(p => p.name === name);
+  if (existing) {
+    existing.severity = sev;
+  } else {
+    symptomLog.pendingItems.push({ name, severity: sev });
+  }
+
+  // Update pip active state for this symptom row
+  const rowId = 'symrow-' + name.replace(/\s+/g,'-');
+  const row = document.getElementById(rowId);
+  if (row) {
+    row.querySelectorAll('.sev-pip').forEach(p => {
+      p.classList.toggle('active', parseInt(p.dataset.sev) === sev);
+    });
+  }
+
+  renderSymptomPending();
+}
+
+// ═══════════════════════════════════════════
+// SYMPTOM SEARCH
+// ═══════════════════════════════════════════
+function onSymptomSearch(val) {
+  const q = val.trim().toLowerCase();
+  const resultsEl = document.getElementById('symptom-search-results');
+
+  if (q.length < 1) {
+    resultsEl.classList.add('hidden');
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  const defaultSet = new Set(getDefaultSymptoms().map(s => s.toLowerCase()));
+  const matches = ALL_SYMPTOMS
+    .filter(s => s.toLowerCase().includes(q) && !defaultSet.has(s.toLowerCase()))
+    .slice(0, 6);
+
+  resultsEl.innerHTML = '';
+
+  matches.forEach(sym => {
+    const el = document.createElement('div');
+    el.className = 'search-result-item';
+    el.innerHTML = `<span>${sym}</span><span class="result-cat">add to list</span>`;
+    el.onclick = () => addSymptomFromSearch(sym);
+    resultsEl.appendChild(el);
+  });
+
+  // Always allow custom entry
+  const exactMatch = ALL_SYMPTOMS.find(s => s.toLowerCase() === q);
+  if (!exactMatch) {
+    const customEl = document.createElement('div');
+    customEl.className = 'search-result-item';
+    customEl.style.color = 'var(--accent2)';
+    customEl.innerHTML = `<span>Add "${val.trim()}"</span><span class="result-cat">custom →</span>`;
+    customEl.onclick = () => addSymptomFromSearch(val.trim());
+    resultsEl.appendChild(customEl);
+  }
+
+  resultsEl.classList.toggle('hidden', resultsEl.children.length === 0);
+}
+
+function addSymptomFromSearch(name) {
+  document.getElementById('symptom-search').value = '';
+  document.getElementById('symptom-search-results').classList.add('hidden');
+
+  // Add row to list if not already there
+  const listEl = document.getElementById('symptom-list');
+  const rowId = 'symrow-' + name.replace(/\s+/g,'-');
+  if (!document.getElementById(rowId)) {
+    const row = buildSymRow(name);
+    // Restore active state if already in pending
+    const existing = symptomLog.pendingItems.find(p => p.name === name);
+    if (existing) {
+      row.querySelectorAll('.sev-pip').forEach(p => {
+        p.classList.toggle('active', parseInt(p.dataset.sev) === existing.severity);
+      });
+    }
+    listEl.appendChild(row);
+  }
+
+  // Scroll to the row
+  const row = document.getElementById(rowId);
+  if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ═══════════════════════════════════════════
+// PENDING + SAVE
+// ═══════════════════════════════════════════
+function renderSymptomPending() {
+  const section = document.getElementById('symptom-pending-section');
+  const listEl  = document.getElementById('symptom-pending-list');
+
+  if (symptomLog.pendingItems.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+  listEl.innerHTML = '';
+
+  symptomLog.pendingItems.forEach((item, i) => {
+    const color = SEV_COLORS[item.severity] || 'var(--muted)';
+    const el = document.createElement('div');
+    el.className = 'sym-pending-item';
+    el.innerHTML = `
+      <div class="sym-pending-left">
+        <div class="sym-pending-name">${item.name}</div>
+        <div class="sym-pending-sev" style="color:${color}">${SEV_LABELS[item.severity]}</div>
+      </div>
+      <button onclick="removeSymPending(${i})" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;">×</button>
+    `;
+    listEl.appendChild(el);
+  });
+}
+
+function removeSymPending(i) {
+  const removed = symptomLog.pendingItems.splice(i, 1)[0];
+  // Deactivate pips on the row
+  if (removed) {
+    const rowId = 'symrow-' + removed.name.replace(/\s+/g,'-');
+    const row = document.getElementById(rowId);
+    if (row) row.querySelectorAll('.sev-pip').forEach(p => p.classList.remove('active'));
+  }
+  renderSymptomPending();
+}
+
+async function saveSymptomEntry() {
+  if (symptomLog.pendingItems.length === 0) return;
+
+  const btn = document.querySelector('#symptom-pending-section .btn-primary');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  const now  = new Date();
+  const date = now.toISOString().slice(0,10);
+  const time = now.toTimeString().slice(0,5);
+
+  const rows = symptomLog.pendingItems.map(item => [
+    date, time, item.name, item.severity, ''
+  ]);
+
+  const queued = rows.map(r => ({ type: 'symptom', row: r }));
+  const offline = JSON.parse(localStorage.getItem('flare_offline_queue') || '[]');
+  offline.push(...queued);
+  localStorage.setItem('flare_offline_queue', JSON.stringify(offline));
+
+  try {
+    await flushOfflineQueue();
+    showSymptomToast(`✓ ${symptomLog.pendingItems.length} symptom${symptomLog.pendingItems.length > 1 ? 's' : ''} saved`);
+    symptomLog.pendingItems = [];
+    // Reset all pip active states
+    document.querySelectorAll('.sev-pip').forEach(p => p.classList.remove('active'));
+    renderSymptomPending();
+    loadTodaysSymptomLog();
+    updateHomeSymptomStat();
+  } catch(e) {
+    showSymptomToast('Saved offline — will sync when connected');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save entry';
+}
+
+// ═══════════════════════════════════════════
+// TODAY'S SYMPTOM LOG
+// ═══════════════════════════════════════════
+async function loadTodaysSymptomLog() {
+  const el = document.getElementById('todays-symptom-log');
+  el.innerHTML = '<div class="empty-state"><div class="spinner" style="display:inline-block"></div></div>';
+
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const resp  = await gapi('GET',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/symptom_log`
+    );
+    const rows = (resp.values || []).slice(1).filter(r => r[0] === today && r[2]);
+
+    if (rows.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌡️</div>No symptoms logged today</div>';
+      updateHomeSymptomStat(null);
+      return;
+    }
+
+    el.innerHTML = '';
+    rows.forEach(r => {
+      const [date, time, name, sev] = r;
+      const sevNum = parseInt(sev) || 0;
+      const color  = SEV_COLORS[sevNum] || 'var(--muted)';
+      const div = document.createElement('div');
+      div.className = 'sym-log-entry';
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:600;font-size:14px;">${name}</div>
+          <div style="font-size:12px;color:${color};margin-top:2px;">${SEV_LABELS[sevNum] || sev}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap;">${time}</div>
+      `;
+      el.appendChild(div);
+    });
+
+    // Find highest severity for home stat
+    const maxSev = Math.max(...rows.map(r => parseInt(r[3]) || 0));
+    updateHomeSymptomStat(maxSev);
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state" style="color:var(--accent2)">Could not load symptoms</div>';
+  }
+}
+
+function updateHomeSymptomStat(maxSev) {
+  const el = document.getElementById('stat-symptoms');
+  if (!el) return;
+  if (maxSev === null || maxSev === undefined) { el.textContent = '—'; return; }
+  const labels = { 0:'—', 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
+  const colors = { 0:'var(--muted)', 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
+  el.textContent  = labels[maxSev] || '—';
+  el.style.color  = colors[maxSev] || 'var(--muted)';
+  el.style.fontSize = '16px';
+}
+
+function showSymptomToast(msg) {
+  const el = document.getElementById('symptom-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 // ═══════════════════════════════════════════
