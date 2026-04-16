@@ -1589,7 +1589,7 @@ async function loadTodaysSymptomLog() {
 
     if (rows.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌡️</div>No symptoms logged today</div>';
-      updateHomeSymptomStat(null);
+      updateHomeSymptomStat(0);
       return;
     }
 
@@ -1625,12 +1625,32 @@ async function loadTodaysSymptomLog() {
 function updateHomeSymptomStat(maxSev) {
   const el = document.getElementById('stat-symptoms');
   if (!el) return;
-  if (maxSev === null || maxSev === undefined) { el.textContent = '—'; return; }
-  const labels = { 0:'None', 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
-  const colors = { 0:'var(--muted)', 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
+  if (maxSev === null || maxSev === undefined || maxSev === 0) {
+    el.textContent = 'None';
+    el.style.color = '#3db87a';
+    el.style.fontSize = '16px';
+    return;
+  }
+  const labels = { 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
+  const colors = { 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
   el.textContent  = labels[maxSev] || '—';
   el.style.color  = colors[maxSev] || 'var(--muted)';
   el.style.fontSize = '16px';
+}
+
+async function deleteSymptomEntry(rowIndex) {
+  if (!confirm('Remove this symptom entry?')) return;
+  try {
+    await gapi('PUT',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/symptom_log!A${rowIndex}:E${rowIndex}`,
+      { values: [['','','','','']] },
+      { valueInputOption: 'RAW' }
+    );
+    showSymptomToast('Entry removed');
+    await loadTodaysSymptomLog();
+  } catch(e) {
+    showSymptomToast('Could not delete — try again');
+  }
 }
 
 function showSymptomToast(msg) {
