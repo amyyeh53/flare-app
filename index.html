@@ -1584,7 +1584,8 @@ async function loadTodaysSymptomLog() {
     const resp  = await gapi('GET',
       `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/symptom_log`
     );
-    const rows = (resp.values || []).slice(1).filter(r => r[0] === today && r[2]);
+    const allRows = (resp.values || []).slice(1);
+    const rows = allRows.filter(r => r[0] === today && r[2]);
 
     if (rows.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌡️</div>No symptoms logged today</div>';
@@ -1593,10 +1594,11 @@ async function loadTodaysSymptomLog() {
     }
 
     el.innerHTML = '';
-    rows.forEach(r => {
+    rows.forEach((r, i) => {
       const [date, time, name, sev] = r;
       const sevNum = parseInt(sev) || 0;
       const color  = SEV_COLORS[sevNum] || 'var(--muted)';
+      const rowIndex = allRows.indexOf(r) + 2; // +2 for header and 1-based index
       const div = document.createElement('div');
       div.className = 'sym-log-entry';
       div.innerHTML = `
@@ -1604,7 +1606,10 @@ async function loadTodaysSymptomLog() {
           <div style="font-weight:600;font-size:14px;">${name}</div>
           <div style="font-size:12px;color:${color};margin-top:2px;">${SEV_LABELS[sevNum] || sev}</div>
         </div>
-        <div style="font-size:12px;color:var(--muted);white-space:nowrap;">${time}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <div style="font-size:12px;color:var(--muted);white-space:nowrap;">${time}</div>
+          <button onclick="deleteSymptomEntry(${rowIndex})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;line-height:1;" title="Delete">🗑️</button>
+        </div>
       `;
       el.appendChild(div);
     });
