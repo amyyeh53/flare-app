@@ -908,26 +908,37 @@
     <!-- Week strip -->
     <div id="week-strip" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:28px;"></div>
 
-    <!-- Chart area -->
-    <div class="section-label" style="margin-bottom:12px;">Trends</div>
-
-    <!-- Selectors -->
+    <!-- Chart 1: Correlation -->
+    <div class="section-label" style="margin-bottom:8px;">Food vs symptom</div>
+    <p style="font-size:12px;margin-bottom:12px;">Does eating more of a category worsen a symptom?</p>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <select id="chart-category-select" onchange="renderChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;">
-        <option value="">Food category…</option>
-      </select>
-      <select id="chart-symptom-select" onchange="renderChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;">
-        <option value="">Symptom…</option>
-      </select>
+      <select id="chart-category-select" onchange="renderCorrelationChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;"></select>
+      <select id="chart-symptom-select" onchange="renderCorrelationChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;"></select>
     </div>
-
-    <div id="chart-container" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;">
-      <canvas id="timeline-chart" style="width:100%;display:block;"></canvas>
-      <div id="chart-empty" style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">Select a category and symptom to see trends</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:6px;position:relative;">
+      <canvas id="correlation-chart" height="180" style="width:100%;display:block;"></canvas>
+      <div id="correlation-empty" style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;display:none;">Log more data to see trends</div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:24px;">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:28px;">
       <span style="display:inline-block;width:10px;height:3px;background:#e8593c;margin-right:4px;vertical-align:middle;"></span>Symptom severity &nbsp;
       <span style="display:inline-block;width:10px;height:10px;background:rgba(100,160,255,0.4);margin-right:4px;vertical-align:middle;border-radius:2px;"></span>Food items
+    </div>
+
+    <!-- Chart 2: All symptoms overview -->
+    <div class="section-label" style="margin-bottom:8px;">Symptom overview</div>
+    <p style="font-size:12px;margin-bottom:12px;">All symptoms over the last 30 days.</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <select id="overview-symptom-select" onchange="renderOverviewChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;"></select>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:6px;">
+      <canvas id="overview-chart" height="160" style="width:100%;display:block;"></canvas>
+      <div id="overview-empty" style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;display:none;">No symptom data yet</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:24px;">
+      Dot color = severity &nbsp;
+      <span style="color:#3db87a">●</span> None &nbsp;
+      <span style="color:#d4a020">●</span> Moderate &nbsp;
+      <span style="color:#e8593c">●</span> Unbearable
     </div>
 
   </div>
@@ -1764,10 +1775,12 @@ function showSymptomToast(msg) {
 // TIMELINE STATE
 // ═══════════════════════════════════════════
 let timeline = {
-  weekOffset: 0,      // 0 = current week, -1 = last week, etc.
+  weekOffset: 0,
   allFoodRows: [],
   allSymptomRows: [],
   chartInstance: null,
+  corrChart: null,
+  overviewChart: null,
 };
 
 // ═══════════════════════════════════════════
@@ -1778,7 +1791,8 @@ async function initTimeline() {
   await loadAllTimelineData();
   renderWeekStrip();
   populateChartSelectors();
-  renderChart();
+  renderCorrelationChart();
+  renderOverviewChart();
 }
 
 async function loadAllTimelineData() {
@@ -1957,44 +1971,7 @@ function openDayDetail(dateStr, foodRows, symRows) {
 // ═══════════════════════════════════════════
 // CHART
 // ═══════════════════════════════════════════
-function populateChartSelectors() {
-  const catSel = document.getElementById('chart-category-select');
-  const symSel = document.getElementById('chart-symptom-select');
-  if (!catSel || !symSel) return;
-
-  // Categories present in data
-  const cats = [...new Set(timeline.allFoodRows.map(r => r[4]).filter(Boolean))].sort();
-  catSel.innerHTML = '<option value="">Food category…</option>';
-  cats.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = (CATEGORY_EMOJI[c]||'') + ' ' + c;
-    catSel.appendChild(o);
-  });
-
-  // Symptoms present in data
-  const syms = [...new Set(timeline.allSymptomRows.map(r => r[2]).filter(Boolean))].sort();
-  symSel.innerHTML = '<option value="">Symptom…</option>';
-  syms.forEach(s => {
-    const o = document.createElement('option');
-    o.value = s; o.textContent = s;
-    symSel.appendChild(o);
-  });
-}
-
-function renderChart() {
-  const cat = document.getElementById('chart-category-select')?.value;
-  const sym = document.getElementById('chart-symptom-select')?.value;
-  const canvas  = document.getElementById('timeline-chart');
-  const emptyEl = document.getElementById('chart-empty');
-  if (!canvas || !emptyEl) return;
-
-  if (!cat || !sym) {
-    canvas.style.display = 'none';
-    emptyEl.style.display = 'block';
-    return;
-  }
-
-  // Build 30-day date range
+function get30DayDates() {
   const dates = [];
   const today = new Date();
   for (let i = 29; i >= 0; i--) {
@@ -2002,55 +1979,114 @@ function renderChart() {
     d.setDate(today.getDate() - i);
     dates.push(dateKey(d));
   }
+  return dates;
+}
 
-  // Food counts per day for selected category
-  const foodCounts = {};
-  timeline.allFoodRows
-    .filter(r => r[4] === cat)
-    .forEach(r => { foodCounts[r[0]] = (foodCounts[r[0]] || 0) + 1; });
-
-  // Symptom severity per day for selected symptom (max of the day)
-  const symSevs = {};
-  timeline.allSymptomRows
-    .filter(r => r[2] === sym)
-    .forEach(r => {
-      const sev = parseInt(r[3]) || 0;
-      symSevs[r[0]] = Math.max(symSevs[r[0]] || 0, sev);
-    });
-
-  // Build chart data — null for days with no data (creates breaks)
-  const foodData = dates.map(d => foodCounts[d] !== undefined ? foodCounts[d] : null);
-  const symData  = dates.map(d => symSevs[d]   !== undefined ? symSevs[d]   : null);
-
-  const labels = dates.map(d => {
+function chartDateLabels(dates) {
+  return dates.map(d => {
     const dt = new Date(d + 'T12:00:00');
     return (dt.getMonth()+1) + '/' + dt.getDate();
   });
+}
+
+function populateChartSelectors() {
+  const catSel   = document.getElementById('chart-category-select');
+  const symSel   = document.getElementById('chart-symptom-select');
+  const ovSymSel = document.getElementById('overview-symptom-select');
+  if (!catSel || !symSel || !ovSymSel) return;
+
+  const cats = [...new Set(timeline.allFoodRows.map(r => r[4]).filter(Boolean))].sort();
+  const syms = [...new Set(timeline.allSymptomRows.map(r => r[2]).filter(Boolean))].sort();
+
+  // Correlation chart selectors — default to most common cat + most severe sym
+  const catCounts = {};
+  timeline.allFoodRows.forEach(r => { if (r[4]) catCounts[r[4]] = (catCounts[r[4]]||0) + 1; });
+  const topCat = cats.sort((a,b) => (catCounts[b]||0) - (catCounts[a]||0))[0] || '';
+
+  const symMaxSev = {};
+  timeline.allSymptomRows.forEach(r => {
+    if (r[2]) symMaxSev[r[2]] = Math.max(symMaxSev[r[2]]||0, parseInt(r[3])||0);
+  });
+  const topSym = syms.sort((a,b) => (symMaxSev[b]||0) - (symMaxSev[a]||0))[0] || '';
+
+  catSel.innerHTML = '';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = (CATEGORY_EMOJI[c]||'') + ' ' + c;
+    o.selected = c === topCat;
+    catSel.appendChild(o);
+  });
+  if (!cats.length) catSel.innerHTML = '<option value="">No food data yet</option>';
+
+  symSel.innerHTML = '';
+  syms.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    o.selected = s === topSym;
+    symSel.appendChild(o);
+  });
+  if (!syms.length) symSel.innerHTML = '<option value="">No symptom data yet</option>';
+
+  // Overview symptom selector — default "All"
+  ovSymSel.innerHTML = '<option value="">All symptoms</option>';
+  syms.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    ovSymSel.appendChild(o);
+  });
+}
+
+// ── Chart 1: Correlation (food category vs symptom) ──────────────────────
+function renderCorrelationChart() {
+  const cat     = document.getElementById('chart-category-select')?.value;
+  const sym     = document.getElementById('chart-symptom-select')?.value;
+  const canvas  = document.getElementById('correlation-chart');
+  const emptyEl = document.getElementById('correlation-empty');
+  if (!canvas) return;
+
+  if (!cat || !sym) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  const dates = get30DayDates();
+  const labels = chartDateLabels(dates);
+
+  const foodCounts = {};
+  timeline.allFoodRows.filter(r => r[4] === cat)
+    .forEach(r => { foodCounts[r[0]] = (foodCounts[r[0]]||0) + 1; });
+
+  const symSevs = {};
+  timeline.allSymptomRows.filter(r => r[2] === sym)
+    .forEach(r => { symSevs[r[0]] = Math.max(symSevs[r[0]]||0, parseInt(r[3])||0); });
+
+  const foodData = dates.map(d => foodCounts[d] !== undefined ? foodCounts[d] : null);
+  const symData  = dates.map(d => symSevs[d]   !== undefined ? symSevs[d]   : null);
+
+  const hasAnyData = foodData.some(v => v !== null) || symData.some(v => v !== null);
+  if (!hasAnyData) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
 
   canvas.style.display = 'block';
   emptyEl.style.display = 'none';
 
-  // Destroy previous chart instance
-  if (timeline.chartInstance) {
-    timeline.chartInstance.destroy();
-    timeline.chartInstance = null;
-  }
+  if (timeline.corrChart) { timeline.corrChart.destroy(); timeline.corrChart = null; }
 
-  const ctx = canvas.getContext('2d');
-  // Set canvas height
-  canvas.height = 200;
-
-  timeline.chartInstance = new Chart(ctx, {
+  timeline.corrChart = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels,
       datasets: [
         {
           type: 'bar',
-          label: cat + ' items',
           data: foodData,
           backgroundColor: 'rgba(100,160,255,0.35)',
-          borderColor: 'rgba(100,160,255,0.7)',
+          borderColor: 'rgba(100,160,255,0.6)',
           borderWidth: 1,
           borderRadius: 3,
           yAxisID: 'yFood',
@@ -2058,14 +2094,12 @@ function renderChart() {
         },
         {
           type: 'line',
-          label: sym + ' severity',
           data: symData,
           borderColor: '#e8593c',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointBackgroundColor: '#e8593c',
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          pointRadius: 3,
           tension: 0.3,
           yAxisID: 'ySev',
           spanGaps: false,
@@ -2080,51 +2114,115 @@ function renderChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              if (ctx.dataset.yAxisID === 'ySev') {
-                const sevLabels = ['None','Mild','Moderate','Severe','Unbearable'];
-                return `${sym}: ${sevLabels[ctx.raw] || ctx.raw}`;
+            label: item => {
+              if (item.dataset.yAxisID === 'ySev') {
+                const labs = ['None','Mild','Moderate','Severe','Unbearable'];
+                return sym + ': ' + (labs[item.raw] || item.raw);
               }
-              return `${cat}: ${ctx.raw} item${ctx.raw !== 1 ? 's' : ''}`;
+              return cat + ': ' + item.raw + ' item' + (item.raw !== 1 ? 's' : '');
             }
           }
         }
       },
       scales: {
-        x: {
-          ticks: {
-            color: '#888',
-            font: { size: 10 },
-            maxTicksLimit: 10,
-            maxRotation: 0,
-          },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-        },
-        yFood: {
-          type: 'linear',
-          position: 'left',
-          min: 0,
-          ticks: { color: 'rgba(100,160,255,0.7)', font: { size: 10 }, stepSize: 1 },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          title: { display: false },
-        },
-        ySev: {
-          type: 'linear',
-          position: 'right',
-          min: 0,
-          max: 4,
-          ticks: {
-            color: '#e8593c',
-            font: { size: 10 },
-            stepSize: 1,
-            callback: v => ['','Mild','Mod','Severe','Unb.'][v] || '',
-          },
-          grid: { drawOnChartArea: false },
-        },
+        x: { ticks: { color:'#888', font:{size:10}, maxTicksLimit:8, maxRotation:0 }, grid: { color:'rgba(255,255,255,0.04)' } },
+        yFood: { type:'linear', position:'left', min:0, ticks:{ color:'rgba(100,160,255,0.7)', font:{size:10}, stepSize:1 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+        ySev:  { type:'linear', position:'right', min:0, max:4, ticks:{ color:'#e8593c', font:{size:10}, stepSize:1, callback: v => ['','Mild','Mod','Sev','Unb.'][v]||'' }, grid:{ drawOnChartArea:false } },
       }
     }
   });
 }
+
+// ── Chart 2: Symptom overview (all symptoms or filtered) ─────────────────
+function renderOverviewChart() {
+  const filterSym = document.getElementById('overview-symptom-select')?.value || '';
+  const canvas    = document.getElementById('overview-chart');
+  const emptyEl   = document.getElementById('overview-empty');
+  if (!canvas) return;
+
+  const dates  = get30DayDates();
+  const labels = chartDateLabels(dates);
+
+  // Collect symptoms to show
+  let symsToShow = filterSym
+    ? [filterSym]
+    : [...new Set(timeline.allSymptomRows.map(r => r[2]).filter(Boolean))];
+
+  // Cap at 5 symptoms max to keep chart readable
+  symsToShow = symsToShow.slice(0, 5);
+
+  if (symsToShow.length === 0) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  canvas.style.display = 'block';
+  emptyEl.style.display = 'none';
+
+  const lineColors = ['#e8593c','#3db87a','#d4a020','#64a0ff','#c060d0'];
+
+  const datasets = symsToShow.map((sym, i) => {
+    const sevByDay = {};
+    timeline.allSymptomRows
+      .filter(r => r[2] === sym)
+      .forEach(r => { sevByDay[r[0]] = Math.max(sevByDay[r[0]]||0, parseInt(r[3])||0); });
+
+    const data = dates.map(d => sevByDay[d] !== undefined ? sevByDay[d] : null);
+    const color = lineColors[i % lineColors.length];
+    return {
+      label: sym,
+      data,
+      borderColor: color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointBackgroundColor: data.map(v => {
+        if (v === null) return 'transparent';
+        return ['#3db87a','#3db87a','#d4a020','#d07030','#e8593c'][v] || color;
+      }),
+      pointRadius: 4,
+      tension: 0.3,
+      spanGaps: false,
+    };
+  });
+
+  if (timeline.overviewChart) { timeline.overviewChart.destroy(); timeline.overviewChart = null; }
+
+  timeline.overviewChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: symsToShow.length > 1,
+          labels: { color:'#888', font:{size:11}, boxWidth:12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: item => {
+              const labs = ['None','Mild','Moderate','Severe','Unbearable'];
+              return item.dataset.label + ': ' + (labs[item.raw] ?? '—');
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks:{ color:'#888', font:{size:10}, maxTicksLimit:8, maxRotation:0 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+        y: {
+          min: 0, max: 4,
+          ticks: { color:'#888', font:{size:10}, stepSize:1, callback: v => ['None','Mild','Mod','Severe','Unb.'][v]||'' },
+          grid: { color:'rgba(255,255,255,0.04)' },
+        }
+      }
+    }
+  });
+}
+
+// Keep old renderChart as alias so nothing breaks
+function renderChart() { renderCorrelationChart(); }
 
 
 // ═══════════════════════════════════════════
