@@ -486,11 +486,13 @@
       transition: all 0.12s;
       color: #fff;
     }
-    .sev-pip[data-sev="1"] { background: rgba(61,184,122,0.18); color: #3db87a; border-color: rgba(61,184,122,0.25); }
+    .sev-pip[data-sev="0"] { background: rgba(61,184,122,0.18); color: #3db87a; border-color: rgba(61,184,122,0.25); }
+    .sev-pip[data-sev="1"] { background: rgba(120,200,100,0.18); color: #5aaa40; border-color: rgba(120,200,100,0.25); }
     .sev-pip[data-sev="2"] { background: rgba(240,192,64,0.18); color: #c89a20; border-color: rgba(240,192,64,0.25); }
     .sev-pip[data-sev="3"] { background: rgba(240,160,80,0.18); color: #d07030; border-color: rgba(240,160,80,0.25); }
     .sev-pip[data-sev="4"] { background: rgba(232,89,60,0.18); color: #e8593c; border-color: rgba(232,89,60,0.25); }
-    .sev-pip[data-sev="1"].active { background: #3db87a; color: #fff; border-color: #3db87a; }
+    .sev-pip[data-sev="0"].active { background: #3db87a; color: #fff; border-color: #3db87a; }
+    .sev-pip[data-sev="1"].active { background: #5aaa40; color: #fff; border-color: #5aaa40; }
     .sev-pip[data-sev="2"].active { background: #d4a020; color: #fff; border-color: #d4a020; }
     .sev-pip[data-sev="3"].active { background: #d07030; color: #fff; border-color: #d07030; }
     .sev-pip[data-sev="4"].active { background: #e8593c; color: #fff; border-color: #e8593c; }
@@ -1305,8 +1307,8 @@ const CONDITION_SYMPTOMS = {
 
 const ALL_SYMPTOMS = [...new Set(Object.values(CONDITION_SYMPTOMS).flat())].sort();
 
-const SEV_LABELS = { 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
-const SEV_COLORS = { 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
+const SEV_LABELS = { 0:'None', 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
+const SEV_COLORS = { 0:'#3db87a', 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
 
 // ═══════════════════════════════════════════
 // SYMPTOM LOG STATE
@@ -1323,7 +1325,8 @@ function getDefaultSymptoms() {
   if (syms.size === 0) {
     CONDITION_SYMPTOMS.other.forEach(s => syms.add(s));
   }
-  return [...syms];
+  const dismissed = JSON.parse(localStorage.getItem('flare_dismissed_symptoms') || '[]');
+  return [...syms].filter(s => !dismissed.includes(s));
 }
 
 // ═══════════════════════════════════════════
@@ -1353,18 +1356,22 @@ function buildSymRow(name) {
   row.className = 'sym-row';
   row.id = 'symrow-' + name.replace(/\s+/g,'-');
 
-  const sevHtml = [1,2,3,4].map(n =>
-    `<div class="sev-pip" data-sev="${n}" data-sym="${name}" onclick="setSev('${name.replace(/'/g,"\\'")}',${n},this)">${SEV_LABELS[n].slice(0,3)}</div>`
+  const sevHtml = [0,1,2,3,4].map(n =>
+    `<div class="sev-pip" data-sev="${n}" onclick="setSymSev(this,'${name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}',${n})">${SEV_LABELS[n].slice(0,3)}</div>`
   ).join('');
+  const safeId = 'symrow-' + name.replace(/\s+/g,'-');
 
   row.innerHTML = `
     <span class="sym-name">${name}</span>
-    <div class="sev-inline">${sevHtml}</div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <div class="sev-inline">${sevHtml}</div>
+      <button data-symname="${name.replace(/"/g,'&quot;')}" onclick="deleteSymRow(this)" style="background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:4px 6px;flex-shrink:0;" title="Remove">🗑️</button>
+    </div>
   `;
   return row;
 }
 
-function setSev(name, sev, btn) {
+function setSymSev(btn, name, sev) {
   // Update or add to pending
   const existing = symptomLog.pendingItems.find(p => p.name === name);
   if (existing) {
@@ -1383,6 +1390,42 @@ function setSev(name, sev, btn) {
   }
 
   renderSymptomPending();
+}
+
+function setSev(name, sev, btn) { setSymSev(btn, name, sev); }
+
+function deleteSymRow(btn) {
+  const name = btn.getAttribute('data-symname');
+  const choice = confirm(
+    'Remove "' + name + '" from today's log only, or permanently?\n\n' +
+    'OK = Today only (you can re-add it anytime)\n' +
+    'Cancel = Keep it'
+  );
+  if (!choice) return;
+
+  // Ask about permanent
+  const perm = confirm(
+    'Remove permanently from your symptom list?\n\n' +
+    'OK = Remove permanently\n' +
+    'Cancel = Today only'
+  );
+
+  // Remove from pending
+  const idx = symptomLog.pendingItems.findIndex(p => p.name === name);
+  if (idx >= 0) symptomLog.pendingItems.splice(idx, 1);
+  renderSymptomPending();
+
+  // Remove the row from the DOM
+  const rowId = 'symrow-' + name.replace(/\s+/g, '-');
+  const row = document.getElementById(rowId);
+  if (row) row.remove();
+
+  if (perm) {
+    // Save dismissed list to localStorage
+    const dismissed = JSON.parse(localStorage.getItem('flare_dismissed_symptoms') || '[]');
+    if (!dismissed.includes(name)) dismissed.push(name);
+    localStorage.setItem('flare_dismissed_symptoms', JSON.stringify(dismissed));
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1578,7 +1621,7 @@ function updateHomeSymptomStat(maxSev) {
   const el = document.getElementById('stat-symptoms');
   if (!el) return;
   if (maxSev === null || maxSev === undefined) { el.textContent = '—'; return; }
-  const labels = { 0:'—', 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
+  const labels = { 0:'None', 1:'Mild', 2:'Moderate', 3:'Severe', 4:'Unbearable' };
   const colors = { 0:'var(--muted)', 1:'#3db87a', 2:'#d4a020', 3:'#d07030', 4:'#e8593c' };
   el.textContent  = labels[maxSev] || '—';
   el.style.color  = colors[maxSev] || 'var(--muted)';
