@@ -276,6 +276,189 @@
     .splash-logo { font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 8px; }
     .splash-logo span { color: var(--accent); }
     .splash-tag { font-size: 15px; color: var(--muted); }
+
+    /* ── Food log ── */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 16px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+
+    .search-results {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .search-result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      transition: background 0.1s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:active { background: var(--bg3); }
+    .result-cat {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .category-prompt {
+      background: var(--bg2);
+      border: 1.5px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .category-prompt-label {
+      font-size: 12px;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .cat-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .cat-chip {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cat-chip:active,
+    .cat-chip.selected {
+      border-color: var(--accent);
+      background: rgba(232,89,60,0.15);
+    }
+
+    .meal-slots {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .slot-chip {
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--bg3);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .slot-chip.selected {
+      border-color: var(--accent);
+      background: rgba(232,89,60,0.12);
+      color: var(--text);
+    }
+
+    .pending-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .pending-item-left { display: flex; flex-direction: column; gap: 2px; }
+    .pending-food { font-weight: 600; }
+    .pending-meta { font-size: 12px; color: var(--muted); }
+    .pending-remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-entry-left { display: flex; flex-direction: column; gap: 3px; }
+    .log-food-name { font-weight: 600; }
+    .log-meta { font-size: 12px; color: var(--muted); }
+    .log-watch-flag {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .log-entry-time {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      margin-left: 12px;
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+    .save-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 12px 20px max(12px, env(safe-area-inset-bottom));
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 14px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -490,19 +673,61 @@
 </div>
 
 <!-- ═══════════════════════════════════════════
-     SCREEN STUBS (M3–M6)
+     SCREEN: Food Log (M3)
 ═══════════════════════════════════════════ -->
-<div id="screen-log-food" class="screen hidden">
+<div id="screen-log-food" class="screen hidden" style="padding-bottom:80px;">
   <div class="top-bar">
     <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
     <div class="logo">Fl<span>a</span>re</div>
     <div style="width:48px;"></div>
   </div>
-  <div class="content" style="text-align:center;padding-top:80px;">
-    <div style="font-size:40px;margin-bottom:16px;">🍽️</div>
-    <h2>Food logging</h2>
-    <p>Coming in M3</p>
+  <div class="content">
+
+    <!-- Meal slot picker -->
+    <div class="section-label" style="margin-bottom:10px;">Meal</div>
+    <div class="meal-slots" id="meal-slots"></div>
+
+    <!-- Search -->
+    <div class="section-label">What did you eat?</div>
+    <div class="search-wrap">
+      <input
+        class="search-input"
+        id="food-search"
+        type="text"
+        placeholder="Search or type a food…"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        oninput="onFoodSearch(this.value)"
+      />
+    </div>
+
+    <!-- Search results dropdown -->
+    <div id="search-results" class="search-results hidden"></div>
+
+    <!-- Category prompt (unknown food) -->
+    <div id="category-prompt" class="category-prompt hidden">
+      <div class="category-prompt-label" id="category-prompt-label">What category is this?</div>
+      <div class="cat-chips" id="cat-chips"></div>
+    </div>
+
+    <!-- Pending items (not yet saved) -->
+    <div id="pending-section" class="hidden">
+      <div class="section-label" style="margin-top:20px;margin-bottom:10px;">In this entry</div>
+      <div id="pending-list"></div>
+      <button class="btn btn-primary" id="save-entry-btn" onclick="saveEntry()" style="margin-top:8px;">
+        Save entry
+      </button>
+    </div>
+
+    <!-- Today's log -->
+    <div style="margin-top:28px;">
+      <div class="section-label">Today's log</div>
+      <div id="todays-log"></div>
+    </div>
   </div>
+
+  <div class="toast" id="toast"></div>
 </div>
 
 <div id="screen-log-symptom" class="screen hidden">
@@ -627,6 +852,7 @@ function loadState() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
+  if (id === 'screen-log-food') initFoodLog();
 }
 
 // ═══════════════════════════════════════════
@@ -948,6 +1174,455 @@ function showError(elId, msg) {
   const el = document.getElementById(elId);
   el.textContent = msg;
   el.classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════
+// FOOD DATABASE
+// ═══════════════════════════════════════════
+const FOOD_DB = [
+  // Dairy
+  {name:'Milk',cat:'dairy'},{name:'Whole milk',cat:'dairy'},{name:'Skim milk',cat:'dairy'},
+  {name:'Cheese',cat:'dairy'},{name:'Cheddar cheese',cat:'dairy'},{name:'Mozzarella',cat:'dairy'},
+  {name:'Parmesan',cat:'dairy'},{name:'Brie',cat:'dairy'},{name:'Feta cheese',cat:'dairy'},
+  {name:'Cream cheese',cat:'dairy'},{name:'Cottage cheese',cat:'dairy'},{name:'Ricotta',cat:'dairy'},
+  {name:'Butter',cat:'dairy'},{name:'Ghee',cat:'dairy'},{name:'Heavy cream',cat:'dairy'},
+  {name:'Sour cream',cat:'dairy'},{name:'Yogurt',cat:'dairy'},{name:'Greek yogurt',cat:'dairy'},
+  {name:'Ice cream',cat:'dairy'},{name:'Whipped cream',cat:'dairy'},{name:'Half and half',cat:'dairy'},
+  {name:'Kefir',cat:'dairy'},{name:'Buttermilk',cat:'dairy'},{name:'Cream',cat:'dairy'},
+  // Gluten
+  {name:'Bread',cat:'gluten'},{name:'White bread',cat:'gluten'},{name:'Sourdough',cat:'gluten'},
+  {name:'Whole wheat bread',cat:'gluten'},{name:'Pasta',cat:'gluten'},{name:'Spaghetti',cat:'gluten'},
+  {name:'Penne',cat:'gluten'},{name:'Lasagna',cat:'gluten'},{name:'Pizza',cat:'gluten'},
+  {name:'Pizza dough',cat:'gluten'},{name:'Flour tortilla',cat:'gluten'},{name:'Crackers',cat:'gluten'},
+  {name:'Wheat crackers',cat:'gluten'},{name:'Pretzels',cat:'gluten'},{name:'Bagel',cat:'gluten'},
+  {name:'Croissant',cat:'gluten'},{name:'Muffin',cat:'gluten'},{name:'Pancakes',cat:'gluten'},
+  {name:'Waffles',cat:'gluten'},{name:'Cereal',cat:'gluten'},{name:'Granola',cat:'gluten'},
+  {name:'Oats',cat:'gluten'},{name:'Oatmeal',cat:'gluten'},{name:'Barley',cat:'gluten'},
+  {name:'Rye bread',cat:'gluten'},{name:'Pita bread',cat:'gluten'},{name:'Naan',cat:'gluten'},
+  {name:'Couscous',cat:'gluten'},{name:'Wheat flour',cat:'gluten'},{name:'All-purpose flour',cat:'gluten'},
+  {name:'Breadcrumbs',cat:'gluten'},{name:'Croutons',cat:'gluten'},{name:'Soy sauce',cat:'gluten'},
+  {name:'Seitan',cat:'gluten'},{name:'Cake',cat:'gluten'},{name:'Cookies',cat:'gluten'},
+  {name:'Brownie',cat:'gluten'},{name:'Doughnut',cat:'gluten'},{name:'Flour',cat:'gluten'},
+  // Nightshades
+  {name:'Tomato',cat:'nightshades'},{name:'Tomatoes',cat:'nightshades'},{name:'Cherry tomatoes',cat:'nightshades'},
+  {name:'Tomato sauce',cat:'nightshades'},{name:'Ketchup',cat:'nightshades'},{name:'Salsa',cat:'nightshades'},
+  {name:'Bell pepper',cat:'nightshades'},{name:'Red pepper',cat:'nightshades'},{name:'Green pepper',cat:'nightshades'},
+  {name:'Yellow pepper',cat:'nightshades'},{name:'Chili pepper',cat:'nightshades'},{name:'Jalapeño',cat:'nightshades'},
+  {name:'Cayenne',cat:'nightshades'},{name:'Paprika',cat:'nightshades'},{name:'Chili powder',cat:'nightshades'},
+  {name:'Hot sauce',cat:'nightshades'},{name:'Sriracha',cat:'nightshades'},{name:'Eggplant',cat:'nightshades'},
+  {name:'Potato',cat:'nightshades'},{name:'Potatoes',cat:'nightshades'},{name:'White potato',cat:'nightshades'},
+  {name:'Goji berries',cat:'nightshades'},{name:'Tomatillo',cat:'nightshades'},
+  // Caffeine
+  {name:'Coffee',cat:'caffeine'},{name:'Espresso',cat:'caffeine'},{name:'Latte',cat:'caffeine'},
+  {name:'Cappuccino',cat:'caffeine'},{name:'Americano',cat:'caffeine'},{name:'Cold brew',cat:'caffeine'},
+  {name:'Iced coffee',cat:'caffeine'},{name:'Black tea',cat:'caffeine'},{name:'Green tea',cat:'caffeine'},
+  {name:'Matcha',cat:'caffeine'},{name:'Energy drink',cat:'caffeine'},{name:'Red Bull',cat:'caffeine'},
+  {name:'Monster energy',cat:'caffeine'},{name:'Diet Coke',cat:'caffeine'},{name:'Coca-Cola',cat:'caffeine'},
+  {name:'Coke',cat:'caffeine'},{name:'Pepsi',cat:'caffeine'},{name:'Dark chocolate',cat:'caffeine'},
+  {name:'Pre-workout',cat:'caffeine'},{name:'White tea',cat:'caffeine'},{name:'Chai',cat:'caffeine'},
+  {name:'Chai latte',cat:'caffeine'},
+  // Alcohol
+  {name:'Beer',cat:'alcohol'},{name:'Wine',cat:'alcohol'},{name:'Red wine',cat:'alcohol'},
+  {name:'White wine',cat:'alcohol'},{name:'Rosé',cat:'alcohol'},{name:'Champagne',cat:'alcohol'},
+  {name:'Vodka',cat:'alcohol'},{name:'Gin',cat:'alcohol'},{name:'Tequila',cat:'alcohol'},
+  {name:'Rum',cat:'alcohol'},{name:'Whiskey',cat:'alcohol'},{name:'Bourbon',cat:'alcohol'},
+  {name:'Scotch',cat:'alcohol'},{name:'Hard cider',cat:'alcohol'},{name:'Hard seltzer',cat:'alcohol'},
+  {name:'White claw',cat:'alcohol'},{name:'Cocktail',cat:'alcohol'},{name:'Margarita',cat:'alcohol'},
+  {name:'Bloody mary',cat:'alcohol'},{name:'Prosecco',cat:'alcohol'},
+  // Histamine
+  {name:'Spinach',cat:'histamine'},{name:'Avocado',cat:'histamine'},{name:'Eggplant',cat:'histamine'},
+  {name:'Fermented foods',cat:'histamine'},{name:'Sauerkraut',cat:'histamine'},{name:'Kimchi',cat:'histamine'},
+  {name:'Kombucha',cat:'histamine'},{name:'Vinegar',cat:'histamine'},{name:'Balsamic vinegar',cat:'histamine'},
+  {name:'Pickles',cat:'histamine'},{name:'Olives',cat:'histamine'},{name:'Smoked salmon',cat:'histamine'},
+  {name:'Anchovies',cat:'histamine'},{name:'Sardines',cat:'histamine'},{name:'Tuna',cat:'histamine'},
+  {name:'Canned tuna',cat:'histamine'},{name:'Mackerel',cat:'histamine'},{name:'Shellfish',cat:'histamine'},
+  {name:'Shrimp',cat:'histamine'},{name:'Lobster',cat:'histamine'},{name:'Crab',cat:'histamine'},
+  {name:'Leftovers',cat:'histamine'},{name:'Strawberries',cat:'histamine'},{name:'Raspberries',cat:'histamine'},
+  {name:'Banana',cat:'histamine'},{name:'Pineapple',cat:'histamine'},{name:'Papaya',cat:'histamine'},
+  {name:'Dried fruit',cat:'histamine'},{name:'Nuts',cat:'histamine'},{name:'Walnuts',cat:'histamine'},
+  {name:'Cashews',cat:'histamine'},{name:'Peanuts',cat:'histamine'},{name:'Alcohol',cat:'histamine'},
+  {name:'Cured meats',cat:'histamine'},{name:'Salami',cat:'histamine'},{name:'Pepperoni',cat:'histamine'},
+  {name:'Prosciutto',cat:'histamine'},{name:'Bacon',cat:'histamine'},
+  // Processed / additives
+  {name:'Chips',cat:'processed/additives'},{name:'Potato chips',cat:'processed/additives'},
+  {name:'Doritos',cat:'processed/additives'},{name:'Cheetos',cat:'processed/additives'},
+  {name:'Fast food',cat:'processed/additives'},{name:'Chicken nuggets',cat:'processed/additives'},
+  {name:'Hot dog',cat:'processed/additives'},{name:'Sausage',cat:'processed/additives'},
+  {name:'Deli meat',cat:'processed/additives'},{name:'Lunch meat',cat:'processed/additives'},
+  {name:'Ham',cat:'processed/additives'},{name:'Bologna',cat:'processed/additives'},
+  {name:'Instant noodles',cat:'processed/additives'},{name:'Ramen',cat:'processed/additives'},
+  {name:'Microwave meal',cat:'processed/additives'},{name:'Frozen pizza',cat:'processed/additives'},
+  {name:'Canned soup',cat:'processed/additives'},{name:'Margarine',cat:'processed/additives'},
+  {name:'Vegetable oil',cat:'processed/additives'},{name:'Canola oil',cat:'processed/additives'},
+  {name:'Artificial sweetener',cat:'processed/additives'},{name:'Splenda',cat:'processed/additives'},
+  {name:'Aspartame',cat:'processed/additives'},{name:'MSG',cat:'processed/additives'},
+  {name:'Candy',cat:'processed/additives'},{name:'Gummy bears',cat:'processed/additives'},
+  {name:'Fruit snacks',cat:'processed/additives'},{name:'Granola bar',cat:'processed/additives'},
+  {name:'Protein bar',cat:'processed/additives'},{name:'Sports drink',cat:'processed/additives'},
+  {name:'Gatorade',cat:'processed/additives'},{name:'Powerade',cat:'processed/additives'},
+  // Sugar
+  {name:'Sugar',cat:'sugar'},{name:'White sugar',cat:'sugar'},{name:'Brown sugar',cat:'sugar'},
+  {name:'Honey',cat:'sugar'},{name:'Maple syrup',cat:'sugar'},{name:'Agave',cat:'sugar'},
+  {name:'Corn syrup',cat:'sugar'},{name:'High fructose corn syrup',cat:'sugar'},
+  {name:'Juice',cat:'sugar'},{name:'Orange juice',cat:'sugar'},{name:'Apple juice',cat:'sugar'},
+  {name:'Soda',cat:'sugar'},{name:'Lemonade',cat:'sugar'},{name:'Sweet tea',cat:'sugar'},
+  {name:'Smoothie',cat:'sugar'},{name:'Milkshake',cat:'sugar'},{name:'Chocolate',cat:'sugar'},
+  {name:'Milk chocolate',cat:'sugar'},{name:'Candy bar',cat:'sugar'},{name:'Jam',cat:'sugar'},
+  {name:'Jelly',cat:'sugar'},{name:'Nutella',cat:'sugar'},{name:'Frosting',cat:'sugar'},
+  {name:'Syrup',cat:'sugar'},{name:'Caramel',cat:'sugar'},
+  // Neutral / safe foods (no category flag)
+  {name:'Chicken',cat:'protein'},{name:'Chicken breast',cat:'protein'},{name:'Grilled chicken',cat:'protein'},
+  {name:'Turkey',cat:'protein'},{name:'Ground beef',cat:'protein'},{name:'Beef',cat:'protein'},
+  {name:'Steak',cat:'protein'},{name:'Pork',cat:'protein'},{name:'Pork chop',cat:'protein'},
+  {name:'Salmon',cat:'protein'},{name:'Cod',cat:'protein'},{name:'Tilapia',cat:'protein'},
+  {name:'Eggs',cat:'protein'},{name:'Egg whites',cat:'protein'},{name:'Hard boiled egg',cat:'protein'},
+  {name:'Tofu',cat:'protein'},{name:'Tempeh',cat:'protein'},{name:'Lentils',cat:'protein'},
+  {name:'Black beans',cat:'protein'},{name:'Chickpeas',cat:'protein'},{name:'Edamame',cat:'protein'},
+  {name:'Rice',cat:'grain'},{name:'White rice',cat:'grain'},{name:'Brown rice',cat:'grain'},
+  {name:'Quinoa',cat:'grain'},{name:'Corn tortilla',cat:'grain'},{name:'Polenta',cat:'grain'},
+  {name:'Sweet potato',cat:'vegetable'},{name:'Broccoli',cat:'vegetable'},{name:'Cauliflower',cat:'vegetable'},
+  {name:'Zucchini',cat:'vegetable'},{name:'Cucumber',cat:'vegetable'},{name:'Carrots',cat:'vegetable'},
+  {name:'Celery',cat:'vegetable'},{name:'Asparagus',cat:'vegetable'},{name:'Green beans',cat:'vegetable'},
+  {name:'Kale',cat:'vegetable'},{name:'Lettuce',cat:'vegetable'},{name:'Romaine',cat:'vegetable'},
+  {name:'Arugula',cat:'vegetable'},{name:'Cabbage',cat:'vegetable'},{name:'Beets',cat:'vegetable'},
+  {name:'Mushrooms',cat:'vegetable'},{name:'Garlic',cat:'vegetable'},{name:'Onion',cat:'vegetable'},
+  {name:'Apple',cat:'fruit'},{name:'Pear',cat:'fruit'},{name:'Grapes',cat:'fruit'},
+  {name:'Blueberries',cat:'fruit'},{name:'Watermelon',cat:'fruit'},{name:'Mango',cat:'fruit'},
+  {name:'Peach',cat:'fruit'},{name:'Cherries',cat:'fruit'},{name:'Kiwi',cat:'fruit'},
+  {name:'Oranges',cat:'fruit'},{name:'Lemon',cat:'fruit'},{name:'Grapefruit',cat:'fruit'},
+  {name:'Water',cat:'beverage'},{name:'Sparkling water',cat:'beverage'},{name:'Herbal tea',cat:'beverage'},
+  {name:'Almond milk',cat:'beverage'},{name:'Oat milk',cat:'beverage'},{name:'Coconut milk',cat:'beverage'},
+  {name:'Olive oil',cat:'fat'},{name:'Coconut oil',cat:'fat'},{name:'Avocado oil',cat:'fat'},
+];
+
+const WATCH_CATEGORIES = new Set([
+  'dairy','gluten','nightshades','caffeine','alcohol','histamine','processed/additive','sugar'
+]);
+
+// ═══════════════════════════════════════════
+// FOOD LOG STATE
+// ═══════════════════════════════════════════
+let foodLog = {
+  selectedSlot: null,
+  pendingItems: [],       // [{name, cat, isCustom}]
+  unknownFoodName: null,  // food being categorized
+  todaysEntries: [],      // loaded from sheet
+};
+
+const MEAL_SLOTS = ['Breakfast','Lunch','Dinner','Snack','Beverage'];
+
+// ═══════════════════════════════════════════
+// FOOD LOG SCREEN INIT
+// ═══════════════════════════════════════════
+function initFoodLog() {
+  // Build meal slot chips
+  const slotsEl = document.getElementById('meal-slots');
+  slotsEl.innerHTML = '';
+  MEAL_SLOTS.forEach(slot => {
+    const el = document.createElement('div');
+    el.className = 'slot-chip' + (foodLog.selectedSlot === slot ? ' selected' : '');
+    el.textContent = slot;
+    el.onclick = () => selectSlot(slot);
+    slotsEl.appendChild(el);
+  });
+
+  // Clear search
+  document.getElementById('food-search').value = '';
+  document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('category-prompt').classList.add('hidden');
+
+  // Reset pending
+  foodLog.pendingItems = [];
+  renderPending();
+
+  // Load today's log
+  loadTodaysLog();
+}
+
+function selectSlot(slot) {
+  foodLog.selectedSlot = slot;
+  document.querySelectorAll('.slot-chip').forEach(el => {
+    el.classList.toggle('selected', el.textContent === slot);
+  });
+}
+
+// ═══════════════════════════════════════════
+// FOOD SEARCH
+// ═══════════════════════════════════════════
+function onFoodSearch(val) {
+  const q = val.trim().toLowerCase();
+  const resultsEl = document.getElementById('search-results');
+  const promptEl  = document.getElementById('category-prompt');
+
+  promptEl.classList.add('hidden');
+  foodLog.unknownFoodName = null;
+
+  if (q.length < 1) {
+    resultsEl.classList.add('hidden');
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  const matches = FOOD_DB.filter(f => f.name.toLowerCase().includes(q)).slice(0, 8);
+
+  resultsEl.innerHTML = '';
+
+  // Always add "Add [typed text]" as last option if not exact match
+  const exactMatch = FOOD_DB.find(f => f.name.toLowerCase() === q);
+
+  matches.forEach(food => {
+    const el = document.createElement('div');
+    el.className = 'search-result-item';
+    const isWatched = WATCH_CATEGORIES.has(food.cat) && (state.watchCategories||[]).includes(food.cat);
+    el.innerHTML = `
+      <span>${food.name}${isWatched ? ' <span style="color:var(--accent);font-size:11px;">●</span>' : ''}</span>
+      <span class="result-cat">${food.cat}</span>
+    `;
+    el.onclick = () => addKnownFood(food);
+    resultsEl.appendChild(el);
+  });
+
+  if (!exactMatch) {
+    const addEl = document.createElement('div');
+    addEl.className = 'search-result-item';
+    addEl.style.color = 'var(--accent2)';
+    addEl.innerHTML = `<span>Add "${val.trim()}"</span><span class="result-cat">pick category →</span>`;
+    addEl.onclick = () => promptCategory(val.trim());
+    resultsEl.appendChild(addEl);
+  }
+
+  resultsEl.classList.remove('hidden');
+}
+
+function addKnownFood(food) {
+  document.getElementById('food-search').value = '';
+  document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('category-prompt').classList.add('hidden');
+
+  foodLog.pendingItems.push({
+    name: food.name,
+    cat: food.cat,
+    isCustom: false,
+  });
+  renderPending();
+}
+
+function promptCategory(foodName) {
+  foodLog.unknownFoodName = foodName;
+  document.getElementById('food-search').value = '';
+  document.getElementById('search-results').classList.add('hidden');
+
+  const promptEl = document.getElementById('category-prompt');
+  const labelEl  = document.getElementById('category-prompt-label');
+  const chipsEl  = document.getElementById('cat-chips');
+
+  labelEl.textContent = `What category is "${foodName}"?`;
+  chipsEl.innerHTML = '';
+
+  ALL_CATEGORIES.forEach(cat => {
+    const el = document.createElement('div');
+    el.className = 'cat-chip';
+    el.textContent = CATEGORY_EMOJI[cat] + ' ' + cat.charAt(0).toUpperCase() + cat.slice(1);
+    el.onclick = () => addCustomFood(foodName, cat);
+    chipsEl.appendChild(el);
+  });
+
+  promptEl.classList.remove('hidden');
+}
+
+function addCustomFood(name, cat) {
+  document.getElementById('category-prompt').classList.add('hidden');
+  foodLog.unknownFoodName = null;
+
+  foodLog.pendingItems.push({ name, cat, isCustom: true });
+  renderPending();
+}
+
+// ═══════════════════════════════════════════
+// PENDING LIST
+// ═══════════════════════════════════════════
+function renderPending() {
+  const section  = document.getElementById('pending-section');
+  const listEl   = document.getElementById('pending-list');
+
+  if (foodLog.pendingItems.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+  listEl.innerHTML = '';
+
+  foodLog.pendingItems.forEach((item, i) => {
+    const isWatched = (state.watchCategories||[]).includes(item.cat);
+    const el = document.createElement('div');
+    el.className = 'pending-item';
+    el.innerHTML = `
+      <div class="pending-item-left">
+        <div class="pending-food">${item.name}</div>
+        <div class="pending-meta">${CATEGORY_EMOJI[item.cat]||'•'} ${item.cat}${item.isCustom ? ' · custom' : ''}${isWatched ? ' <span style="color:var(--accent)">● watch</span>' : ''}</div>
+      </div>
+      <button class="pending-remove" onclick="removePending(${i})">×</button>
+    `;
+    listEl.appendChild(el);
+  });
+}
+
+function removePending(i) {
+  foodLog.pendingItems.splice(i, 1);
+  renderPending();
+}
+
+// ═══════════════════════════════════════════
+// SAVE ENTRY
+// ═══════════════════════════════════════════
+async function saveEntry() {
+  if (foodLog.pendingItems.length === 0) return;
+
+  const btn = document.getElementById('save-entry-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  const now  = new Date();
+  const date = now.toISOString().slice(0,10);
+  const time = now.toTimeString().slice(0,5);
+  const slot = foodLog.selectedSlot || 'Snack';
+
+  const rows = foodLog.pendingItems.map(item => [
+    date, time, slot, item.name, item.cat, item.isCustom ? 'TRUE' : 'FALSE'
+  ]);
+
+  // Queue locally first
+  const queued = rows.map(r => ({type:'food', row:r}));
+  const offline = JSON.parse(localStorage.getItem('flare_offline_queue')||'[]');
+  offline.push(...queued);
+  localStorage.setItem('flare_offline_queue', JSON.stringify(offline));
+
+  try {
+    await flushOfflineQueue();
+    showToast(`✓ ${foodLog.pendingItems.length} item${foodLog.pendingItems.length>1?'s':''} saved`);
+    foodLog.pendingItems = [];
+    renderPending();
+    loadTodaysLog();
+    updateHomeStats();
+  } catch(e) {
+    showToast('Saved offline — will sync when connected');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save entry';
+}
+
+// ═══════════════════════════════════════════
+// OFFLINE QUEUE
+// ═══════════════════════════════════════════
+async function flushOfflineQueue() {
+  const queue = JSON.parse(localStorage.getItem('flare_offline_queue')||'[]');
+  if (queue.length === 0) return;
+
+  const foodRows    = queue.filter(q=>q.type==='food').map(q=>q.row);
+  const symptomRows = queue.filter(q=>q.type==='symptom').map(q=>q.row);
+
+  if (foodRows.length > 0) {
+    await gapi('POST',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/food_log:append`,
+      { values: foodRows },
+      { valueInputOption:'RAW', insertDataOption:'INSERT_ROWS' }
+    );
+  }
+
+  if (symptomRows.length > 0) {
+    await gapi('POST',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/symptom_log:append`,
+      { values: symptomRows },
+      { valueInputOption:'RAW', insertDataOption:'INSERT_ROWS' }
+    );
+  }
+
+  localStorage.removeItem('flare_offline_queue');
+}
+
+// ═══════════════════════════════════════════
+// TODAY'S LOG
+// ═══════════════════════════════════════════
+async function loadTodaysLog() {
+  const el = document.getElementById('todays-log');
+  el.innerHTML = '<div class="empty-state"><div class="spinner" style="display:inline-block"></div></div>';
+
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const resp  = await gapi('GET',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/food_log`
+    );
+    const rows = (resp.values || []).slice(1); // skip header
+    const todayRows = rows.filter(r => r[0] === today);
+
+    if (todayRows.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽️</div>Nothing logged yet today</div>';
+      updateHomeStats(0);
+      return;
+    }
+
+    foodLog.todaysEntries = todayRows;
+    renderTodaysLog(todayRows);
+    updateHomeStats(todayRows.length);
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state" style="color:var(--accent2)">Could not load log</div>';
+  }
+}
+
+function renderTodaysLog(rows) {
+  const el = document.getElementById('todays-log');
+
+  // Group by slot
+  const bySlot = {};
+  rows.forEach(r => {
+    const slot = r[2] || 'Other';
+    if (!bySlot[slot]) bySlot[slot] = [];
+    bySlot[slot].push(r);
+  });
+
+  el.innerHTML = '';
+  Object.entries(bySlot).forEach(([slot, items]) => {
+    const slotHeader = document.createElement('div');
+    slotHeader.style.cssText = 'font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:16px 0 6px;';
+    slotHeader.textContent = slot;
+    el.appendChild(slotHeader);
+
+    items.forEach(r => {
+      const [date, time, , name, cat] = r;
+      const isWatched = (state.watchCategories||[]).includes(cat);
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = `
+        <div class="log-entry-left">
+          <div class="log-food-name">${name}</div>
+          <div class="log-meta">${CATEGORY_EMOJI[cat]||'•'} ${cat}</div>
+          ${isWatched ? '<div class="log-watch-flag">● on watch list</div>' : ''}
+        </div>
+        <div class="log-entry-time">${time}</div>
+      `;
+      el.appendChild(div);
+    });
+  });
+}
+
+function updateHomeStats(mealCount) {
+  const el = document.getElementById('stat-meals');
+  if (el && mealCount !== undefined) el.textContent = mealCount;
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 // ═══════════════════════════════════════════
