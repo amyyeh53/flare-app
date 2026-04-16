@@ -522,6 +522,52 @@
     }
     .sym-log-entry:last-child { border-bottom: none; }
 
+
+    /* ── Timeline ── */
+    .day-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 4px;
+      border-radius: 10px;
+      cursor: pointer;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      transition: border-color 0.15s;
+    }
+    .day-cell:active { border-color: var(--accent); }
+    .day-cell.today  { border-color: var(--accent); }
+    .day-cell.no-data { opacity: 0.35; cursor: default; }
+    .day-label-wd { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .day-label-d  { font-size: 15px; font-weight: 700; }
+    .day-sev-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .day-sev-dot.sev-0 { background: #3db87a; }
+    .day-sev-dot.sev-1 { background: #3db87a; }
+    .day-sev-dot.sev-2 { background: #d4a020; }
+    .day-sev-dot.sev-3 { background: #d07030; }
+    .day-sev-dot.sev-4 { background: #e8593c; }
+    .day-meal-count { font-size: 10px; color: var(--muted); }
+
+    .detail-food-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .detail-food-row:last-child { border-bottom: none; }
+    .detail-sym-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .detail-sym-row:last-child { border-bottom: none; }
+
   </style>
 </head>
 <body>
@@ -844,16 +890,68 @@
   <div class="toast" id="symptom-toast"></div>
 </div>
 
-<div id="screen-timeline" class="screen hidden">
+<div id="screen-timeline" class="screen hidden" style="padding-bottom:80px;">
   <div class="top-bar">
     <button onclick="showScreen('screen-home')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
     <div class="logo">Fl<span>a</span>re</div>
     <div style="width:48px;"></div>
   </div>
-  <div class="content" style="text-align:center;padding-top:80px;">
-    <div style="font-size:40px;margin-bottom:16px;">📅</div>
-    <h2>Timeline</h2>
-    <p>Coming in M5</p>
+  <div class="content">
+
+    <!-- Week navigator -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <button onclick="shiftWeek(-1)" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px 8px;">‹</button>
+      <div id="week-label" style="font-size:14px;font-weight:600;"></div>
+      <button onclick="shiftWeek(1)" id="week-next-btn" style="background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px 8px;">›</button>
+    </div>
+
+    <!-- Week strip -->
+    <div id="week-strip" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:28px;"></div>
+
+    <!-- Chart area -->
+    <div class="section-label" style="margin-bottom:12px;">Trends</div>
+
+    <!-- Selectors -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="chart-category-select" onchange="renderChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;">
+        <option value="">Food category…</option>
+      </select>
+      <select id="chart-symptom-select" onchange="renderChart()" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;">
+        <option value="">Symptom…</option>
+      </select>
+    </div>
+
+    <div id="chart-container" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;">
+      <canvas id="timeline-chart" style="width:100%;display:block;"></canvas>
+      <div id="chart-empty" style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">Select a category and symptom to see trends</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:24px;">
+      <span style="display:inline-block;width:10px;height:3px;background:#e8593c;margin-right:4px;vertical-align:middle;"></span>Symptom severity &nbsp;
+      <span style="display:inline-block;width:10px;height:10px;background:rgba(100,160,255,0.4);margin-right:4px;vertical-align:middle;border-radius:2px;"></span>Food items
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Day Detail (M5)
+═══════════════════════════════════════════ -->
+<div id="screen-day-detail" class="screen hidden" style="padding-bottom:80px;">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-timeline')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div id="detail-date-label" class="logo" style="font-size:16px;font-weight:600;"></div>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="content">
+    <div id="detail-flare-banner" class="hidden" style="background:rgba(232,89,60,0.12);border:1px solid rgba(232,89,60,0.3);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--accent2);font-weight:600;">
+      ⚠ Flare day — severity reached Moderate or above
+    </div>
+
+    <div class="section-label">Food logged</div>
+    <div id="detail-food" style="margin-bottom:24px;"></div>
+
+    <div class="section-label">Symptoms</div>
+    <div id="detail-symptoms"></div>
   </div>
 </div>
 
@@ -955,6 +1053,7 @@ function showScreen(id) {
   document.getElementById(id).classList.remove('hidden');
   if (id === 'screen-log-food') initFoodLog();
   if (id === 'screen-log-symptom') initSymptomLog();
+  if (id === 'screen-timeline') initTimeline();
 }
 
 // ═══════════════════════════════════════════
@@ -1662,6 +1761,373 @@ function showSymptomToast(msg) {
 }
 
 // ═══════════════════════════════════════════
+// TIMELINE STATE
+// ═══════════════════════════════════════════
+let timeline = {
+  weekOffset: 0,      // 0 = current week, -1 = last week, etc.
+  allFoodRows: [],
+  allSymptomRows: [],
+  chartInstance: null,
+};
+
+// ═══════════════════════════════════════════
+// TIMELINE INIT
+// ═══════════════════════════════════════════
+async function initTimeline() {
+  timeline.weekOffset = 0;
+  await loadAllTimelineData();
+  renderWeekStrip();
+  populateChartSelectors();
+  renderChart();
+}
+
+async function loadAllTimelineData() {
+  try {
+    const [foodResp, symResp] = await Promise.all([
+      gapi('GET', `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/food_log`),
+      gapi('GET', `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/symptom_log`),
+    ]);
+    timeline.allFoodRows    = (foodResp.values  || []).slice(1).filter(r => r[0] && r[3]);
+    timeline.allSymptomRows = (symResp.values   || []).slice(1).filter(r => r[0] && r[2]);
+  } catch(e) {
+    console.error('Timeline load error', e);
+  }
+}
+
+// ═══════════════════════════════════════════
+// WEEK STRIP
+// ═══════════════════════════════════════════
+function getWeekDates(offset) {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((day + 6) % 7) + offset * 7);
+  monday.setHours(0,0,0,0);
+  return Array.from({length:7}, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+function dateKey(d) {
+  return d.toISOString().slice(0,10);
+}
+
+function shiftWeek(dir) {
+  timeline.weekOffset += dir;
+  // Don't go into the future
+  if (timeline.weekOffset > 0) { timeline.weekOffset = 0; return; }
+  renderWeekStrip();
+  updateWeekNextBtn();
+}
+
+function updateWeekNextBtn() {
+  const btn = document.getElementById('week-next-btn');
+  if (btn) btn.style.opacity = timeline.weekOffset === 0 ? '0.3' : '1';
+}
+
+function renderWeekStrip() {
+  const dates   = getWeekDates(timeline.weekOffset);
+  const todayKey = dateKey(new Date());
+  const strip    = document.getElementById('week-strip');
+  const label    = document.getElementById('week-label');
+  if (!strip) return;
+
+  // Week label
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const first = dates[0], last = dates[6];
+  label.textContent = first.getMonth() === last.getMonth()
+    ? `${months[first.getMonth()]} ${first.getDate()}–${last.getDate()}`
+    : `${months[first.getMonth()]} ${first.getDate()} – ${months[last.getMonth()]} ${last.getDate()}`;
+
+  const days = ['M','T','W','T','F','S','S'];
+  strip.innerHTML = '';
+
+  // Build lookup maps for this week
+  const foodByDay    = {};
+  const symByDay     = {};
+  timeline.allFoodRows.forEach(r => { if (!foodByDay[r[0]]) foodByDay[r[0]] = []; foodByDay[r[0]].push(r); });
+  timeline.allSymptomRows.forEach(r => { if (!symByDay[r[0]]) symByDay[r[0]] = []; symByDay[r[0]].push(r); });
+
+  dates.forEach((d, i) => {
+    const key      = dateKey(d);
+    const isToday  = key === todayKey;
+    const isFuture = d > new Date();
+    const food     = foodByDay[key] || [];
+    const syms     = symByDay[key]  || [];
+    const hasData  = food.length > 0 || syms.length > 0;
+    const maxSev   = syms.length ? Math.max(...syms.map(r => parseInt(r[3]) || 0)) : -1;
+
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (isToday ? ' today' : '') + (!hasData && !isToday ? ' no-data' : '');
+
+    const dotClass = maxSev >= 0 ? `day-sev-dot sev-${maxSev}` : 'day-sev-dot';
+
+    cell.innerHTML = `
+      <div class="day-label-wd">${days[i]}</div>
+      <div class="day-label-d">${d.getDate()}</div>
+      <div class="${dotClass}"></div>
+      <div class="day-meal-count">${food.length > 0 ? food.length + '🍽' : ''}</div>
+    `;
+
+    if (!isFuture && hasData) {
+      cell.onclick = () => openDayDetail(key, food, syms);
+    }
+    strip.appendChild(cell);
+  });
+
+  updateWeekNextBtn();
+}
+
+// ═══════════════════════════════════════════
+// DAY DETAIL
+// ═══════════════════════════════════════════
+function openDayDetail(dateStr, foodRows, symRows) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date(dateStr + 'T12:00:00');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  document.getElementById('detail-date-label').textContent =
+    `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+
+  // Flare banner
+  const maxSev = symRows.length ? Math.max(...symRows.map(r => parseInt(r[3]) || 0)) : 0;
+  document.getElementById('detail-flare-banner').classList.toggle('hidden', maxSev < 2);
+
+  // Food
+  const foodEl = document.getElementById('detail-food');
+  if (foodRows.length === 0) {
+    foodEl.innerHTML = '<div class="empty-state" style="padding:16px 0;">No food logged</div>';
+  } else {
+    // Group by slot
+    const bySlot = {};
+    foodRows.forEach(r => {
+      const slot = r[2] || 'Other';
+      if (!bySlot[slot]) bySlot[slot] = [];
+      bySlot[slot].push(r);
+    });
+    foodEl.innerHTML = '';
+    Object.entries(bySlot).forEach(([slot, items]) => {
+      const h = document.createElement('div');
+      h.style.cssText = 'font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 6px;';
+      h.textContent = slot;
+      foodEl.appendChild(h);
+      items.forEach(r => {
+        const isWatched = (state.watchCategories||[]).includes(r[4]);
+        const div = document.createElement('div');
+        div.className = 'detail-food-row';
+        div.innerHTML = `
+          <div>
+            <div style="font-weight:600;">${r[3]}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${CATEGORY_EMOJI[r[4]]||'•'} ${r[4]}${isWatched ? ' <span style="color:var(--accent)">● watch</span>' : ''}</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">${r[1]}</div>
+        `;
+        foodEl.appendChild(div);
+      });
+    });
+  }
+
+  // Symptoms
+  const symEl = document.getElementById('detail-symptoms');
+  if (symRows.length === 0) {
+    symEl.innerHTML = '<div class="empty-state" style="padding:16px 0;">No symptoms logged</div>';
+  } else {
+    symEl.innerHTML = '';
+    symRows.forEach(r => {
+      const sevNum = parseInt(r[3]) || 0;
+      const color  = SEV_COLORS[sevNum] || 'var(--muted)';
+      const div = document.createElement('div');
+      div.className = 'detail-sym-row';
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:600;">${r[2]}</div>
+          <div style="font-size:12px;color:${color};margin-top:2px;">${SEV_LABELS[sevNum] || r[3]}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);">${r[1]}</div>
+      `;
+      symEl.appendChild(div);
+    });
+  }
+
+  showScreen('screen-day-detail');
+}
+
+// ═══════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════
+function populateChartSelectors() {
+  const catSel = document.getElementById('chart-category-select');
+  const symSel = document.getElementById('chart-symptom-select');
+  if (!catSel || !symSel) return;
+
+  // Categories present in data
+  const cats = [...new Set(timeline.allFoodRows.map(r => r[4]).filter(Boolean))].sort();
+  catSel.innerHTML = '<option value="">Food category…</option>';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = (CATEGORY_EMOJI[c]||'') + ' ' + c;
+    catSel.appendChild(o);
+  });
+
+  // Symptoms present in data
+  const syms = [...new Set(timeline.allSymptomRows.map(r => r[2]).filter(Boolean))].sort();
+  symSel.innerHTML = '<option value="">Symptom…</option>';
+  syms.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    symSel.appendChild(o);
+  });
+}
+
+function renderChart() {
+  const cat = document.getElementById('chart-category-select')?.value;
+  const sym = document.getElementById('chart-symptom-select')?.value;
+  const canvas  = document.getElementById('timeline-chart');
+  const emptyEl = document.getElementById('chart-empty');
+  if (!canvas || !emptyEl) return;
+
+  if (!cat || !sym) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  // Build 30-day date range
+  const dates = [];
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    dates.push(dateKey(d));
+  }
+
+  // Food counts per day for selected category
+  const foodCounts = {};
+  timeline.allFoodRows
+    .filter(r => r[4] === cat)
+    .forEach(r => { foodCounts[r[0]] = (foodCounts[r[0]] || 0) + 1; });
+
+  // Symptom severity per day for selected symptom (max of the day)
+  const symSevs = {};
+  timeline.allSymptomRows
+    .filter(r => r[2] === sym)
+    .forEach(r => {
+      const sev = parseInt(r[3]) || 0;
+      symSevs[r[0]] = Math.max(symSevs[r[0]] || 0, sev);
+    });
+
+  // Build chart data — null for days with no data (creates breaks)
+  const foodData = dates.map(d => foodCounts[d] !== undefined ? foodCounts[d] : null);
+  const symData  = dates.map(d => symSevs[d]   !== undefined ? symSevs[d]   : null);
+
+  const labels = dates.map(d => {
+    const dt = new Date(d + 'T12:00:00');
+    return (dt.getMonth()+1) + '/' + dt.getDate();
+  });
+
+  canvas.style.display = 'block';
+  emptyEl.style.display = 'none';
+
+  // Destroy previous chart instance
+  if (timeline.chartInstance) {
+    timeline.chartInstance.destroy();
+    timeline.chartInstance = null;
+  }
+
+  const ctx = canvas.getContext('2d');
+  // Set canvas height
+  canvas.height = 200;
+
+  timeline.chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: cat + ' items',
+          data: foodData,
+          backgroundColor: 'rgba(100,160,255,0.35)',
+          borderColor: 'rgba(100,160,255,0.7)',
+          borderWidth: 1,
+          borderRadius: 3,
+          yAxisID: 'yFood',
+          spanGaps: false,
+        },
+        {
+          type: 'line',
+          label: sym + ' severity',
+          data: symData,
+          borderColor: '#e8593c',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointBackgroundColor: '#e8593c',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          yAxisID: 'ySev',
+          spanGaps: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'ySev') {
+                const sevLabels = ['None','Mild','Moderate','Severe','Unbearable'];
+                return `${sym}: ${sevLabels[ctx.raw] || ctx.raw}`;
+              }
+              return `${cat}: ${ctx.raw} item${ctx.raw !== 1 ? 's' : ''}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#888',
+            font: { size: 10 },
+            maxTicksLimit: 10,
+            maxRotation: 0,
+          },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
+        yFood: {
+          type: 'linear',
+          position: 'left',
+          min: 0,
+          ticks: { color: 'rgba(100,160,255,0.7)', font: { size: 10 }, stepSize: 1 },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          title: { display: false },
+        },
+        ySev: {
+          type: 'linear',
+          position: 'right',
+          min: 0,
+          max: 4,
+          ticks: {
+            color: '#e8593c',
+            font: { size: 10 },
+            stepSize: 1,
+            callback: v => ['','Mild','Mod','Severe','Unb.'][v] || '',
+          },
+          grid: { drawOnChartArea: false },
+        },
+      }
+    }
+  });
+}
+
+
+// ═══════════════════════════════════════════
 // FOOD DATABASE
 // ═══════════════════════════════════════════
 const FOOD_DB = [
@@ -2179,5 +2645,6 @@ async function init() {
 
 init();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </body>
 </html>
