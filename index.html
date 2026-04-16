@@ -295,6 +295,7 @@
     }
     .search-input:focus { border-color: var(--accent); }
     .search-input::placeholder { color: var(--muted); }
+    .search-input:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .search-results {
       background: var(--bg2);
@@ -587,7 +588,7 @@
 
     <div class="stat-row">
       <div class="stat-card">
-        <div class="stat-label">Meals today</div>
+        <div class="stat-label">Food logged today</div>
         <div class="stat-value" id="stat-meals">—</div>
       </div>
       <div class="stat-card">
@@ -694,7 +695,7 @@
         class="search-input"
         id="food-search"
         type="text"
-        placeholder="Search or type a food…"
+        placeholder="Select a meal above first…"
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
@@ -1326,8 +1327,11 @@ function initFoodLog() {
     slotsEl.appendChild(el);
   });
 
-  // Clear search
-  document.getElementById('food-search').value = '';
+  // Clear search — disabled until slot is selected
+  const searchInput = document.getElementById('food-search');
+  searchInput.value = '';
+  searchInput.disabled = true;
+  searchInput.placeholder = 'Select a meal above first…';
   document.getElementById('search-results').classList.add('hidden');
   document.getElementById('category-prompt').classList.add('hidden');
 
@@ -1344,6 +1348,10 @@ function selectSlot(slot) {
   document.querySelectorAll('.slot-chip').forEach(el => {
     el.classList.toggle('selected', el.textContent === slot);
   });
+  const input = document.getElementById('food-search');
+  input.disabled = false;
+  input.placeholder = 'Search or type a food…';
+  input.focus();
 }
 
 // ═══════════════════════════════════════════
@@ -1555,7 +1563,7 @@ async function loadTodaysLog() {
       `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/food_log`
     );
     const rows = (resp.values || []).slice(1); // skip header
-    const todayRows = rows.filter(r => r[0] === today);
+    const todayRows = rows.filter(r => r[0] === today && r[3]); // r[3] = food_name, skip blanked rows
 
     if (todayRows.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽️</div>Nothing logged yet today</div>';
@@ -1592,6 +1600,7 @@ function renderTodaysLog(rows) {
     items.forEach(r => {
       const [date, time, , name, cat] = r;
       const isWatched = (state.watchCategories||[]).includes(cat);
+      const rowIndex = rows.indexOf(r) + 2; // +2 for header row and 1-based index
       const div = document.createElement('div');
       div.className = 'log-entry';
       div.innerHTML = `
@@ -1600,11 +1609,31 @@ function renderTodaysLog(rows) {
           <div class="log-meta">${CATEGORY_EMOJI[cat]||'•'} ${cat}</div>
           ${isWatched ? '<div class="log-watch-flag">● on watch list</div>' : ''}
         </div>
-        <div class="log-entry-time">${time}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:12px;">
+          <div class="log-entry-time">${time}</div>
+          <button onclick="deleteEntry(${rowIndex})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;line-height:1;" title="Delete">🗑️</button>
+        </div>
       `;
       el.appendChild(div);
     });
   });
+}
+
+async function deleteEntry(rowIndex) {
+  if (!confirm('Remove this entry?')) return;
+  try {
+    // Clear the row by writing empty values — Sheets API doesn't support true row deletion
+    // without batchUpdate with deleteDimension, so we clear and filter on display
+    await gapi('PUT',
+      `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/food_log!A${rowIndex}:F${rowIndex}`,
+      { values: [['','','','','','']] },
+      { valueInputOption: 'RAW' }
+    );
+    showToast('Entry removed');
+    loadTodaysLog();
+  } catch(e) {
+    showToast('Could not delete — try again');
+  }
 }
 
 function updateHomeStats(mealCount) {
