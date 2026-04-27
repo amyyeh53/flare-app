@@ -1026,12 +1026,31 @@
       ⚠ Flare day — severity reached Moderate or above
     </div>
 
+    <!-- Add buttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;">
+      <button onclick="openDetailAddFood()" class="btn btn-secondary" style="padding:10px;">+ Add food</button>
+      <button onclick="openDetailAddSymptom()" class="btn btn-secondary" style="padding:10px;">+ Add symptom</button>
+    </div>
+
     <div class="section-label">Food logged</div>
     <div id="detail-food" style="margin-bottom:24px;"></div>
 
     <div class="section-label">Symptoms</div>
     <div id="detail-symptoms"></div>
   </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: Detail Log (past date food/symptom)
+═══════════════════════════════════════════ -->
+<div id="screen-detail-log" class="screen hidden" style="padding-bottom:80px;">
+  <div class="top-bar">
+    <button onclick="showScreen('screen-day-detail')" style="background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;">← Back</button>
+    <div id="detail-log-title" class="logo" style="font-size:16px;font-weight:600;"></div>
+    <div style="width:48px;"></div>
+  </div>
+  <div id="detail-log-body" class="content"></div>
+  <div class="toast" id="detail-log-toast"></div>
 </div>
 
 <div id="screen-triggers" class="screen hidden" style="padding-bottom:80px;">
@@ -1891,6 +1910,7 @@ let timeline = {
   chartInstance: null,
   corrChart: null,
   overviewChart: null,
+  detailDate: null,
 };
 
 // ═══════════════════════════════════════════
@@ -1995,7 +2015,7 @@ function renderWeekStrip() {
       <div class="day-meal-count">${food.length > 0 ? food.length + '🍽' : ''}</div>
     `;
 
-    if (!isFuture && hasData) {
+    if (!isFuture) {
       cell.onclick = () => openDayDetail(key, food, syms);
     }
     strip.appendChild(cell);
@@ -2010,72 +2030,99 @@ function renderWeekStrip() {
 function openDayDetail(dateStr, foodRows, symRows) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const d = new Date(dateStr + 'T12:00:00');
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  // Store current detail date for add buttons
+  timeline.detailDate = dateStr;
 
   document.getElementById('detail-date-label').textContent =
-    `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+    `${dayNames[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 
   // Flare banner
   const maxSev = symRows.length ? Math.max(...symRows.map(r => parseInt(r[3]) || 0)) : 0;
   document.getElementById('detail-flare-banner').classList.toggle('hidden', maxSev < 2);
 
   // Food
-  const foodEl = document.getElementById('detail-food');
-  if (foodRows.length === 0) {
-    foodEl.innerHTML = '<div class="empty-state" style="padding:16px 0;">No food logged</div>';
-  } else {
-    // Group by slot
-    const bySlot = {};
-    foodRows.forEach(r => {
-      const slot = r[2] || 'Other';
-      if (!bySlot[slot]) bySlot[slot] = [];
-      bySlot[slot].push(r);
-    });
-    foodEl.innerHTML = '';
-    Object.entries(bySlot).forEach(([slot, items]) => {
-      const h = document.createElement('div');
-      h.style.cssText = 'font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 6px;';
-      h.textContent = slot;
-      foodEl.appendChild(h);
-      items.forEach(r => {
-        const isWatched = (state.watchCategories||[]).includes(r[4]);
-        const div = document.createElement('div');
-        div.className = 'detail-food-row';
-        div.innerHTML = `
-          <div>
-            <div style="font-weight:600;">${r[3]}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${CATEGORY_EMOJI[r[4]]||'•'} ${r[4]}${isWatched ? ' <span style="color:var(--accent)">● watch</span>' : ''}</div>
-          </div>
-          <div style="font-size:12px;color:var(--muted);">${r[1]}</div>
-        `;
-        foodEl.appendChild(div);
-      });
-    });
-  }
+  renderDetailFood(foodRows);
 
   // Symptoms
-  const symEl = document.getElementById('detail-symptoms');
-  if (symRows.length === 0) {
-    symEl.innerHTML = '<div class="empty-state" style="padding:16px 0;">No symptoms logged</div>';
-  } else {
-    symEl.innerHTML = '';
-    symRows.forEach(r => {
-      const sevNum = parseInt(r[3]) || 0;
-      const color  = SEV_COLORS[sevNum] || 'var(--muted)';
+  renderDetailSymptoms(symRows);
+
+  showScreen('screen-day-detail');
+}
+
+function renderDetailFood(foodRows) {
+  const foodEl = document.getElementById('detail-food');
+  if (foodRows.length === 0) {
+    foodEl.innerHTML = '<div class="empty-state" style="padding:12px 0 0;">No food logged</div>';
+    return;
+  }
+  const bySlot = {};
+  foodRows.forEach(r => {
+    const slot = r[2] || 'Other';
+    if (!bySlot[slot]) bySlot[slot] = [];
+    bySlot[slot].push(r);
+  });
+  foodEl.innerHTML = '';
+  Object.entries(bySlot).forEach(([slot, items]) => {
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 6px;';
+    h.textContent = slot;
+    foodEl.appendChild(h);
+    items.forEach(r => {
+      const isWatched = (state.watchCategories||[]).includes(r[4]);
       const div = document.createElement('div');
-      div.className = 'detail-sym-row';
+      div.className = 'detail-food-row';
       div.innerHTML = `
         <div>
-          <div style="font-weight:600;">${r[2]}</div>
-          <div style="font-size:12px;color:${color};margin-top:2px;">${SEV_LABELS[sevNum] || r[3]}</div>
+          <div style="font-weight:600;">${r[3]}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${CATEGORY_EMOJI[r[4]]||'•'} ${r[4]}${isWatched ? ' <span style="color:var(--accent)">● watch</span>' : ''}</div>
         </div>
         <div style="font-size:12px;color:var(--muted);">${r[1]}</div>
       `;
-      symEl.appendChild(div);
+      foodEl.appendChild(div);
     });
-  }
+  });
+}
 
-  showScreen('screen-day-detail');
+function renderDetailSymptoms(symRows) {
+  const symEl = document.getElementById('detail-symptoms');
+  if (symRows.length === 0) {
+    symEl.innerHTML = '<div class="empty-state" style="padding:12px 0 0;">No symptoms logged</div>';
+    return;
+  }
+  symEl.innerHTML = '';
+  symRows.forEach(r => {
+    const sevNum = parseInt(r[3]) || 0;
+    const color  = SEV_COLORS[sevNum] || 'var(--muted)';
+    const div = document.createElement('div');
+    div.className = 'detail-sym-row';
+    div.innerHTML = `
+      <div>
+        <div style="font-weight:600;">${r[2]}</div>
+        <div style="font-size:12px;color:${color};margin-top:2px;">${SEV_LABELS[sevNum] || r[3]}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);">${r[1]}</div>
+    `;
+    symEl.appendChild(div);
+  });
+}
+
+function openDetailAddFood() {
+  detailLog.mode = 'food';
+  detailLog.date = timeline.detailDate;
+  detailLog.pendingItems = [];
+  detailLog.selectedSlot = null;
+  renderDetailLogScreen();
+  showScreen('screen-detail-log');
+}
+
+function openDetailAddSymptom() {
+  detailLog.mode = 'symptom';
+  detailLog.date = timeline.detailDate;
+  detailLog.pendingItems = [];
+  renderDetailLogScreen();
+  showScreen('screen-detail-log');
 }
 
 // ═══════════════════════════════════════════
@@ -2480,6 +2527,368 @@ function computeTriggers() {
   // Summary line
   document.getElementById('trigger-summary').textContent =
     `${flareDayCount} flare day${flareDayCount !== 1 ? 's' : ''} and ${totalDaysInWindow} total day${totalDaysInWindow !== 1 ? 's' : ''} in the last ${days} days`;
+}
+
+
+// ═══════════════════════════════════════════
+// DETAIL LOG — past date food/symptom entry
+// ═══════════════════════════════════════════
+let detailLog = {
+  mode: 'food',       // 'food' | 'symptom'
+  date: null,         // YYYY-MM-DD
+  selectedSlot: null,
+  pendingItems: [],
+};
+
+function renderDetailLogScreen() {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date(detailLog.date + 'T12:00:00');
+  const dateLabel = months[d.getMonth()] + ' ' + d.getDate();
+
+  document.getElementById('detail-log-title').textContent =
+    (detailLog.mode === 'food' ? 'Food · ' : 'Symptoms · ') + dateLabel;
+
+  const body = document.getElementById('detail-log-body');
+  body.innerHTML = '';
+
+  if (detailLog.mode === 'food') {
+    renderDetailFoodBody(body);
+  } else {
+    renderDetailSymptomBody(body);
+  }
+}
+
+// ── Food body ────────────────────────────────────────────────────────────────
+function renderDetailFoodBody(body) {
+  // Meal slot picker
+  const slotSection = document.createElement('div');
+  slotSection.innerHTML = `<div class="section-label" style="margin-bottom:10px;">Meal</div>`;
+  const slotRow = document.createElement('div');
+  slotRow.className = 'meal-slots';
+  slotRow.id = 'detail-meal-slots';
+  MEAL_SLOTS.forEach(slot => {
+    const el = document.createElement('div');
+    el.className = 'slot-chip' + (detailLog.selectedSlot === slot ? ' selected' : '');
+    el.textContent = slot;
+    el.onclick = () => {
+      detailLog.selectedSlot = slot;
+      document.querySelectorAll('#detail-meal-slots .slot-chip').forEach(c =>
+        c.classList.toggle('selected', c.textContent === slot));
+      const si = document.getElementById('detail-food-search');
+      if (si) { si.disabled = false; si.placeholder = 'Search or type a food…'; si.focus(); }
+    };
+    slotRow.appendChild(el);
+  });
+  slotSection.appendChild(slotRow);
+  body.appendChild(slotSection);
+
+  // Search input
+  const searchSection = document.createElement('div');
+  searchSection.innerHTML = `
+    <div class="section-label">What did you eat?</div>
+    <div class="search-wrap">
+      <input class="search-input" id="detail-food-search" type="text"
+        placeholder="Select a meal above first…"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        disabled
+        oninput="onDetailFoodSearch(this.value)" />
+    </div>
+    <div id="detail-search-results" class="search-results hidden"></div>
+    <div id="detail-category-prompt" class="category-prompt hidden">
+      <div class="category-prompt-label" id="detail-cat-prompt-label">What category is this?</div>
+      <div class="cat-chips" id="detail-cat-chips"></div>
+    </div>
+  `;
+  body.appendChild(searchSection);
+
+  // Pending
+  const pendingSection = document.createElement('div');
+  pendingSection.id = 'detail-pending-section';
+  pendingSection.className = detailLog.pendingItems.length ? '' : 'hidden';
+  body.appendChild(pendingSection);
+  renderDetailPending();
+}
+
+function onDetailFoodSearch(val) {
+  const q = val.trim().toLowerCase();
+  const resultsEl = document.getElementById('detail-search-results');
+  const promptEl  = document.getElementById('detail-category-prompt');
+  promptEl.classList.add('hidden');
+
+  if (q.length < 1) { resultsEl.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+
+  const matches = FOOD_DB.filter(f => f.name.toLowerCase().includes(q)).slice(0, 8);
+  resultsEl.innerHTML = '';
+
+  const exactMatch = FOOD_DB.find(f => f.name.toLowerCase() === q);
+  matches.forEach(food => {
+    const el = document.createElement('div');
+    el.className = 'search-result-item';
+    const isWatched = (state.watchCategories||[]).includes(food.cat);
+    el.innerHTML = `<span>${food.name}${isWatched ? ' <span style="color:var(--accent);font-size:11px;">●</span>' : ''}</span><span class="result-cat">${food.cat}</span>`;
+    el.onclick = () => addDetailKnownFood(food);
+    resultsEl.appendChild(el);
+  });
+
+  if (!exactMatch) {
+    const addEl = document.createElement('div');
+    addEl.className = 'search-result-item';
+    addEl.style.color = 'var(--accent2)';
+    addEl.innerHTML = `<span>Add "${val.trim()}"</span><span class="result-cat">pick category →</span>`;
+    addEl.onclick = () => detailPromptCategory(val.trim());
+    resultsEl.appendChild(addEl);
+  }
+  resultsEl.classList.toggle('hidden', resultsEl.children.length === 0);
+}
+
+function addDetailKnownFood(food) {
+  document.getElementById('detail-food-search').value = '';
+  document.getElementById('detail-search-results').classList.add('hidden');
+  detailLog.pendingItems.push({ name: food.name, cat: food.cat, isCustom: false });
+  renderDetailPending();
+}
+
+function detailPromptCategory(foodName) {
+  document.getElementById('detail-food-search').value = '';
+  document.getElementById('detail-search-results').classList.add('hidden');
+  const promptEl = document.getElementById('detail-category-prompt');
+  document.getElementById('detail-cat-prompt-label').textContent = `What category is "${foodName}"?`;
+  const chipsEl = document.getElementById('detail-cat-chips');
+  chipsEl.innerHTML = '';
+  ALL_CATEGORIES.forEach(cat => {
+    const el = document.createElement('div');
+    el.className = 'cat-chip';
+    el.textContent = CATEGORY_EMOJI[cat] + ' ' + cat.charAt(0).toUpperCase() + cat.slice(1);
+    el.onclick = () => {
+      promptEl.classList.add('hidden');
+      detailLog.pendingItems.push({ name: foodName, cat, isCustom: true });
+      renderDetailPending();
+    };
+    chipsEl.appendChild(el);
+  });
+  promptEl.classList.remove('hidden');
+}
+
+function renderDetailPending() {
+  const section = document.getElementById('detail-pending-section');
+  if (!section) return;
+  if (detailLog.pendingItems.length === 0) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  section.innerHTML = `<div class="section-label" style="margin-top:20px;margin-bottom:10px;">In this entry</div>`;
+  detailLog.pendingItems.forEach((item, i) => {
+    const isWatched = (state.watchCategories||[]).includes(item.cat);
+    const el = document.createElement('div');
+    el.className = 'pending-item';
+    el.innerHTML = `
+      <div class="pending-item-left">
+        <div class="pending-food">${item.name}</div>
+        <div class="pending-meta">${CATEGORY_EMOJI[item.cat]||'•'} ${item.cat}${isWatched ? ' <span style="color:var(--accent)">● watch</span>' : ''}</div>
+      </div>
+      <button class="pending-remove" onclick="removeDetailPending(${i})">×</button>
+    `;
+    section.appendChild(el);
+  });
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.style.marginTop = '8px';
+  saveBtn.textContent = 'Save entry';
+  saveBtn.onclick = saveDetailEntry;
+  section.appendChild(saveBtn);
+}
+
+function removeDetailPending(i) {
+  detailLog.pendingItems.splice(i, 1);
+  renderDetailPending();
+}
+
+// ── Symptom body ─────────────────────────────────────────────────────────────
+function renderDetailSymptomBody(body) {
+  // Legend
+  body.insertAdjacentHTML('beforeend', `
+    <div id="sev-legend" style="display:flex;align-items:center;gap:6px;margin-bottom:20px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap;">Not an issue</span>
+      <div style="flex:1;height:6px;border-radius:3px;background:linear-gradient(to right,#3db87a,#f0c040,#f0a050,#e8593c);"></div>
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap;">Unbearable</span>
+    </div>
+    <div class="section-label">How were you feeling?</div>
+    <div id="detail-symptom-list" style="margin-bottom:20px;"></div>
+    <div class="section-label">Add a symptom</div>
+    <div class="search-wrap">
+      <input class="search-input" id="detail-symptom-search" type="text"
+        placeholder="Type a symptom…" autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="onDetailSymptomSearch(this.value)" />
+    </div>
+    <div id="detail-symptom-search-results" class="search-results hidden"></div>
+    <div id="detail-symptom-pending-section" class="hidden"></div>
+  `);
+
+  // Build symptom list
+  const listEl = document.getElementById('detail-symptom-list');
+  getDefaultSymptoms().forEach(sym => {
+    const row = buildDetailSymRow(sym);
+    listEl.appendChild(row);
+  });
+}
+
+function buildDetailSymRow(name) {
+  const row = document.createElement('div');
+  row.className = 'sym-row';
+  row.id = 'detail-symrow-' + name.replace(/\s+/g,'-');
+  const sevHtml = [0,1,2,3,4].map(n =>
+    `<div class="sev-pip" data-sev="${n}" onclick="setDetailSev('${name.replace(/'/g,"\\'")}',${n},this)">${SEV_LABELS[n].slice(0,3)}</div>`
+  ).join('');
+  row.innerHTML = `<span class="sym-name">${name}</span><div class="sev-inline">${sevHtml}</div>`;
+  return row;
+}
+
+function setDetailSev(name, sev, btn) {
+  const existing = detailLog.pendingItems.find(p => p.name === name);
+  if (existing) existing.severity = sev;
+  else detailLog.pendingItems.push({ name, severity: sev });
+
+  const rowId = 'detail-symrow-' + name.replace(/\s+/g,'-');
+  const row = document.getElementById(rowId);
+  if (row) row.querySelectorAll('.sev-pip').forEach(p =>
+    p.classList.toggle('active', parseInt(p.dataset.sev) === sev));
+
+  renderDetailSymPending();
+}
+
+function onDetailSymptomSearch(val) {
+  const q = val.trim().toLowerCase();
+  const resultsEl = document.getElementById('detail-symptom-search-results');
+  if (q.length < 1) { resultsEl.classList.add('hidden'); return; }
+  const defaultSet = new Set(getDefaultSymptoms().map(s => s.toLowerCase()));
+  const matches = ALL_SYMPTOMS.filter(s => s.toLowerCase().includes(q) && !defaultSet.has(s.toLowerCase())).slice(0, 6);
+  resultsEl.innerHTML = '';
+  matches.forEach(sym => {
+    const el = document.createElement('div');
+    el.className = 'search-result-item';
+    el.innerHTML = `<span>${sym}</span><span class="result-cat">add →</span>`;
+    el.onclick = () => {
+      document.getElementById('detail-symptom-search').value = '';
+      resultsEl.classList.add('hidden');
+      const listEl = document.getElementById('detail-symptom-list');
+      const rowId = 'detail-symrow-' + sym.replace(/\s+/g,'-');
+      if (!document.getElementById(rowId)) listEl.appendChild(buildDetailSymRow(sym));
+      document.getElementById(rowId)?.scrollIntoView({ behavior:'smooth', block:'center' });
+    };
+    resultsEl.appendChild(el);
+  });
+  if (!ALL_SYMPTOMS.find(s => s.toLowerCase() === q)) {
+    const el = document.createElement('div');
+    el.className = 'search-result-item';
+    el.style.color = 'var(--accent2)';
+    el.innerHTML = `<span>Add "${val.trim()}"</span><span class="result-cat">custom →</span>`;
+    el.onclick = () => {
+      document.getElementById('detail-symptom-search').value = '';
+      resultsEl.classList.add('hidden');
+      const listEl = document.getElementById('detail-symptom-list');
+      const rowId = 'detail-symrow-' + val.trim().replace(/\s+/g,'-');
+      if (!document.getElementById(rowId)) listEl.appendChild(buildDetailSymRow(val.trim()));
+    };
+    resultsEl.appendChild(el);
+  }
+  resultsEl.classList.toggle('hidden', resultsEl.children.length === 0);
+}
+
+function renderDetailSymPending() {
+  const section = document.getElementById('detail-symptom-pending-section');
+  if (!section) return;
+  if (detailLog.pendingItems.length === 0) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  section.innerHTML = `<div class="section-label" style="margin-top:20px;margin-bottom:10px;">In this entry</div>`;
+  detailLog.pendingItems.forEach((item, i) => {
+    const color = SEV_COLORS[item.severity] || 'var(--muted)';
+    const el = document.createElement('div');
+    el.className = 'sym-pending-item';
+    el.innerHTML = `
+      <div class="sym-pending-left">
+        <div class="sym-pending-name">${item.name}</div>
+        <div class="sym-pending-sev" style="color:${color}">${SEV_LABELS[item.severity]}</div>
+      </div>
+      <button onclick="removeDetailSymPending(${i})" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;">×</button>
+    `;
+    section.appendChild(el);
+  });
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.style.marginTop = '8px';
+  saveBtn.textContent = 'Save entry';
+  saveBtn.onclick = saveDetailEntry;
+  section.appendChild(saveBtn);
+}
+
+function removeDetailSymPending(i) {
+  const removed = detailLog.pendingItems.splice(i, 1)[0];
+  if (removed) {
+    const rowId = 'detail-symrow-' + removed.name.replace(/\s+/g,'-');
+    const row = document.getElementById(rowId);
+    if (row) row.querySelectorAll('.sev-pip').forEach(p => p.classList.remove('active'));
+  }
+  renderDetailSymPending();
+}
+
+// ── Save ─────────────────────────────────────────────────────────────────────
+async function saveDetailEntry() {
+  if (detailLog.pendingItems.length === 0) return;
+
+  const time = '12:00'; // default noon for past entries
+  const date = detailLog.date;
+
+  let rows, type;
+  if (detailLog.mode === 'food') {
+    const slot = detailLog.selectedSlot || 'Other';
+    rows = detailLog.pendingItems.map(item => [date, time, slot, item.name, item.cat, item.isCustom ? 'TRUE' : 'FALSE']);
+    type = 'food';
+  } else {
+    rows = detailLog.pendingItems.map(item => [date, time, item.name, item.severity, '']);
+    type = 'symptom';
+  }
+
+  const queued = rows.map(r => ({ type, row: r }));
+  const offline = JSON.parse(localStorage.getItem('flare_offline_queue') || '[]');
+  offline.push(...queued);
+  localStorage.setItem('flare_offline_queue', JSON.stringify(offline));
+
+  try {
+    await flushOfflineQueue();
+    showDetailToast(`✓ ${detailLog.pendingItems.length} item${detailLog.pendingItems.length > 1 ? 's' : ''} saved`);
+    detailLog.pendingItems = [];
+
+    // Reload the day detail with fresh data
+    await refreshDayDetail(date);
+  } catch(e) {
+    showDetailToast('Saved offline — will sync when connected');
+  }
+}
+
+async function refreshDayDetail(dateStr) {
+  // Reload all timeline data then re-render the day detail
+  await loadAllTimelineData();
+  const foodByDay = {};
+  const symByDay  = {};
+  timeline.allFoodRows.forEach(r => { if (!foodByDay[r[0]]) foodByDay[r[0]] = []; foodByDay[r[0]].push(r); });
+  timeline.allSymptomRows.forEach(r => { if (!symByDay[r[0]]) symByDay[r[0]] = []; symByDay[r[0]].push(r); });
+  const food = foodByDay[dateStr] || [];
+  const syms = symByDay[dateStr]  || [];
+
+  // Update detail view without re-opening (go back to it)
+  renderDetailFood(food);
+  renderDetailSymptoms(syms);
+  const maxSev = syms.length ? Math.max(...syms.map(r => parseInt(r[3]) || 0)) : 0;
+  document.getElementById('detail-flare-banner').classList.toggle('hidden', maxSev < 2);
+
+  showScreen('screen-day-detail');
+  renderWeekStrip(); // refresh dots on week strip
+}
+
+function showDetailToast(msg) {
+  const el = document.getElementById('detail-log-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 
